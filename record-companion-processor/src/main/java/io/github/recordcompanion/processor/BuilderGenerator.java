@@ -265,14 +265,7 @@ public class BuilderGenerator {
 
   private CodeBlock generateWithMethodBody(List<? extends RecordComponentElement> components) {
     CodeBlock.Builder body = CodeBlock.builder();
-    body.addStatement("Builder builder = new Builder()");
-
-    // Copy all values from existing record
-    for (RecordComponentElement component : components) {
-      String componentName = component.getSimpleName().toString();
-      body.addStatement("builder.$N = existing.$N()", componentName, componentName);
-    }
-
+    body.addStatement("Builder builder = builder(existing)");
     body.addStatement("u.accept(builder)");
     body.addStatement("return builder.build()");
 
