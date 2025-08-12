@@ -33,7 +33,7 @@ User user = UserCompanion.builder()
 ## Project Structure
 
 - `record-companion-annotations/` - Annotation definitions
-- `record-companion-processor/` - Annotation processor implementation  
+- `record-companion-processor/` - Annotation processor implementation
 - `record-companion-tests/` - Integration tests
 
 ## Building
@@ -47,3 +47,4 @@ mvn test
 
 - Java 17+
 - Maven 3.6+
+

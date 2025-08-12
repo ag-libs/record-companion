@@ -23,10 +23,11 @@ class BuilderTest {
     User original = new User("Jane", 25, "jane@example.com");
 
     // Test builder with existing record - should copy values and allow chaining
-    User copy = UserCompanion.builder(original)
-        .age(26) // modify age with chaining
-        .email("jane.doe@example.com") // chain another modification
-        .build();
+    User copy =
+        UserCompanion.builder(original)
+            .age(26) // modify age with chaining
+            .email("jane.doe@example.com") // chain another modification
+            .build();
 
     assertEquals("Jane", copy.name()); // name should be copied
     assertEquals(26, copy.age()); // age should be modified
@@ -66,11 +67,8 @@ class BuilderTest {
   @Test
   void testBuilderChaining() {
     // Test that Builder methods return Builder for proper chaining
-    User user = UserCompanion.builder()
-        .name("Chained")
-        .age(25)
-        .email("chained@example.com")
-        .build();
+    User user =
+        UserCompanion.builder().name("Chained").age(25).email("chained@example.com").build();
 
     assertEquals("Chained", user.name());
     assertEquals(25, user.age());
