@@ -94,6 +94,7 @@ public class BuilderGenerator {
         DeclaredType declaredType = (DeclaredType) componentType;
         TypeElement nestedRecordElement = (TypeElement) declaredType.asElement();
         ClassName nestedCompanionClass = getCompanionClassName(nestedRecordElement);
+        String updaterParamName = generateUpdaterParameterName(nestedRecordElement.getSimpleName().toString());
 
         ClassName consumerType = ClassName.get("java.util.function", "Consumer");
         ParameterizedTypeName nestedUpdaterConsumerType =
@@ -102,12 +103,12 @@ public class BuilderGenerator {
         MethodSpec nestedSetterMethod =
             MethodSpec.methodBuilder(componentName)
                 .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
-                .addParameter(nestedUpdaterConsumerType, componentName + "Updater")
+                .addParameter(nestedUpdaterConsumerType, updaterParamName)
                 .returns(ClassName.bestGuess("Updater"))
                 .addJavadoc("Updates the $N value using a fluent updater.\n", componentName)
                 .addJavadoc(
-                    "@param $NUpdater consumer that receives an updater for the nested $N\n",
-                    componentName,
+                    "@param $N consumer that receives an updater for the nested $N\n",
+                    updaterParamName,
                     componentName)
                 .addJavadoc("@return this updater for method chaining\n")
                 .build();
@@ -156,17 +157,18 @@ public class BuilderGenerator {
         DeclaredType declaredType = (DeclaredType) componentType;
         TypeElement nestedRecordElement = (TypeElement) declaredType.asElement();
         ClassName nestedCompanionClass = getCompanionClassName(nestedRecordElement);
+        String updaterParamName = generateUpdaterParameterName(nestedRecordElement.getSimpleName().toString());
 
         ClassName consumerType = ClassName.get("java.util.function", "Consumer");
         ParameterizedTypeName nestedUpdaterConsumerType =
             ParameterizedTypeName.get(consumerType, nestedCompanionClass.nestedClass("Updater"));
 
-        CodeBlock nestedSetterBody = generateNestedSetterBody(componentName, nestedCompanionClass);
+        CodeBlock nestedSetterBody = generateNestedSetterBody(componentName, nestedCompanionClass, updaterParamName);
 
         MethodSpec nestedSetterMethod =
             MethodSpec.methodBuilder(componentName)
                 .addModifiers(Modifier.PUBLIC)
-                .addParameter(nestedUpdaterConsumerType, componentName + "Updater")
+                .addParameter(nestedUpdaterConsumerType, updaterParamName)
                 .returns(ClassName.bestGuess("Builder"))
                 .addCode(nestedSetterBody)
                 .build();
@@ -249,13 +251,13 @@ public class BuilderGenerator {
     return MethodSpec.methodBuilder("with")
         .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
         .addParameter(recordClass, "existing")
-        .addParameter(updaterConsumerType, "updater")
+        .addParameter(updaterConsumerType, "u")
         .returns(recordClass)
         .addJavadoc(
             "Creates a new record instance by applying modifications to an existing record.\n")
         .addJavadoc("@param existing the existing record to base the new record on\n")
         .addJavadoc(
-            "@param updater a consumer that receives an updater initialized with the existing record's values\n")
+            "@param u a consumer that receives an updater initialized with the existing record's values\n")
         .addJavadoc("@return a new record instance with the applied modifications\n")
         .addCode(generateWithMethodBody(components))
         .build();
@@ -271,31 +273,31 @@ public class BuilderGenerator {
       body.addStatement("builder.$N = existing.$N()", componentName, componentName);
     }
 
-    body.addStatement("updater.accept(builder)");
+    body.addStatement("u.accept(builder)");
     body.addStatement("return builder.build()");
 
     return body.build();
   }
 
   /** Generates the method body for nested record setter methods. */
-  private CodeBlock generateNestedSetterBody(String componentName, ClassName nestedCompanionClass) {
+  private CodeBlock generateNestedSetterBody(String componentName, ClassName nestedCompanionClass, String parameterName) {
     CodeBlock.Builder body = CodeBlock.builder();
 
     // Update existing nested record or create new one if null
     body.beginControlFlow("if (this.$N != null)", componentName);
     body.addStatement(
-        "this.$N = $T.with(this.$N, $NUpdater)",
+        "this.$N = $T.with(this.$N, $N)",
         componentName,
         nestedCompanionClass,
         componentName,
-        componentName);
+        parameterName);
     body.nextControlFlow("else");
     body.addStatement(
-        "this.$N = $T.with($T.builder().build(), $NUpdater)",
+        "this.$N = $T.with($T.builder().build(), $N)",
         componentName,
         nestedCompanionClass,
         nestedCompanionClass,
-        componentName);
+        parameterName);
     body.endControlFlow();
     body.addStatement("return this");
 
@@ -325,5 +327,30 @@ public class BuilderGenerator {
     String recordName = recordElement.getSimpleName().toString();
     String companionName = recordName + "Companion";
     return ClassName.get(packageName, companionName);
+  }
+
+  /**
+   * Generates a short parameter name from a class name by taking first letters of camelCase words + 'u'.
+   * Examples: Address -> au, PersonUpdater -> pu, MyType -> mtu
+   */
+  private String generateUpdaterParameterName(String className) {
+    StringBuilder result = new StringBuilder();
+    
+    // Add first character (always lowercase)
+    if (!className.isEmpty()) {
+      result.append(Character.toLowerCase(className.charAt(0)));
+    }
+    
+    // Add first letter of each subsequent camelCase word
+    for (int i = 1; i < className.length(); i++) {
+      if (Character.isUpperCase(className.charAt(i))) {
+        result.append(Character.toLowerCase(className.charAt(i)));
+      }
+    }
+    
+    // Add 'u' suffix
+    result.append('u');
+    
+    return result.toString();
   }
 }

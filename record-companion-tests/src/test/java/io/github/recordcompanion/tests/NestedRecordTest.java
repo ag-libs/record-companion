@@ -52,8 +52,7 @@ class NestedRecordTest {
             personWithNullAddress,
             updater ->
                 updater.address(
-                    addressUpdater ->
-                        addressUpdater.street("999 New St").city("Seattle").zipCode("98101")));
+                    au -> au.street("999 New St").city("Seattle").zipCode("98101")));
 
     assertEquals("Bob", updated.name());
     assertEquals(35, updated.age());
@@ -81,7 +80,7 @@ class NestedRecordTest {
     Person finalUpdate =
         PersonCompanion.with(
             withNewAddress,
-            updater -> updater.address(addressUpdater -> addressUpdater.zipCode("80202")));
+            u -> u.address(au -> au.zipCode("80202")));
 
     assertEquals("222 Second St", finalUpdate.address().street()); // unchanged
     assertEquals("Denver", finalUpdate.address().city()); // unchanged
