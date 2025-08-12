@@ -26,8 +26,40 @@ class BuilderTest {
     void testBuilderWithExisting() {
         User original = new User("Jane", 25, "jane@example.com");
         
-        // Test builder with existing record (when implemented)
-        UserCompanion.Builder builder = UserCompanion.builder(original);
-        assertNotNull(builder);
+        // Test builder with existing record - should copy values
+        User copy = UserCompanion.builder(original)
+            .age(26)  // modify age
+            .build();
+        
+        assertEquals("Jane", copy.name());  // name should be copied
+        assertEquals(26, copy.age());       // age should be modified
+        assertEquals("jane@example.com", copy.email());  // email should be copied
+    }
+
+    @Test
+    void testWithMethod() {
+        User original = new User("John", 30, "john@example.com");
+        
+        // Test the with method for fluent modification
+        User updated = UserCompanion.with(original, builder -> {
+            builder.age(31);
+            builder.email("john.doe@example.com");
+        });
+        
+        assertEquals("John", updated.name());  // name should remain the same
+        assertEquals(31, updated.age());       // age should be updated
+        assertEquals("john.doe@example.com", updated.email());  // email should be updated
+    }
+
+    @Test
+    void testWithMethodSingleChange() {
+        User original = new User("Alice", 28, "alice@example.com");
+        
+        // Test the with method with single property change
+        User updated = UserCompanion.with(original, builder -> builder.age(29));
+        
+        assertEquals("Alice", updated.name());
+        assertEquals(29, updated.age());
+        assertEquals("alice@example.com", updated.email());
     }
 }
