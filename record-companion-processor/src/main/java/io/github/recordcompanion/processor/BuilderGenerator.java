@@ -6,12 +6,15 @@ import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
+import io.github.recordcompanion.annotations.Builder;
 import java.io.IOException;
 import java.util.List;
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 
 /** Generates builder pattern implementations for record classes. */
@@ -73,6 +76,7 @@ public class BuilderGenerator {
       String componentName = component.getSimpleName().toString();
       TypeMirror componentType = component.asType();
 
+      // Always generate the original setter method
       MethodSpec setterMethod =
           MethodSpec.methodBuilder(componentName)
               .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
@@ -84,6 +88,32 @@ public class BuilderGenerator {
               .build();
 
       updaterBuilder.addMethod(setterMethod);
+
+      // Generate overloaded method for @Builder-annotated record types
+      if (isBuilderAnnotatedRecord(component)) {
+        DeclaredType declaredType = (DeclaredType) componentType;
+        TypeElement nestedRecordElement = (TypeElement) declaredType.asElement();
+        ClassName nestedCompanionClass = getCompanionClassName(nestedRecordElement);
+
+        ClassName consumerType = ClassName.get("java.util.function", "Consumer");
+        ParameterizedTypeName nestedUpdaterConsumerType =
+            ParameterizedTypeName.get(consumerType, nestedCompanionClass.nestedClass("Updater"));
+
+        MethodSpec nestedSetterMethod =
+            MethodSpec.methodBuilder(componentName)
+                .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+                .addParameter(nestedUpdaterConsumerType, componentName + "Updater")
+                .returns(ClassName.bestGuess("Updater"))
+                .addJavadoc("Updates the $N value using a fluent updater.\n", componentName)
+                .addJavadoc(
+                    "@param $NUpdater consumer that receives an updater for the nested $N\n",
+                    componentName,
+                    componentName)
+                .addJavadoc("@return this updater for method chaining\n")
+                .build();
+
+        updaterBuilder.addMethod(nestedSetterMethod);
+      }
     }
 
     return updaterBuilder.build();
@@ -109,6 +139,7 @@ public class BuilderGenerator {
       String componentName = component.getSimpleName().toString();
       TypeMirror componentType = component.asType();
 
+      // Always generate the original setter method
       MethodSpec setterMethod =
           MethodSpec.methodBuilder(componentName)
               .addModifiers(Modifier.PUBLIC)
@@ -119,6 +150,29 @@ public class BuilderGenerator {
               .build();
 
       builderBuilder.addMethod(setterMethod);
+
+      // Generate overloaded method for @Builder-annotated record types
+      if (isBuilderAnnotatedRecord(component)) {
+        DeclaredType declaredType = (DeclaredType) componentType;
+        TypeElement nestedRecordElement = (TypeElement) declaredType.asElement();
+        ClassName nestedCompanionClass = getCompanionClassName(nestedRecordElement);
+
+        ClassName consumerType = ClassName.get("java.util.function", "Consumer");
+        ParameterizedTypeName nestedUpdaterConsumerType =
+            ParameterizedTypeName.get(consumerType, nestedCompanionClass.nestedClass("Updater"));
+
+        CodeBlock nestedSetterBody = generateNestedSetterBody(componentName, nestedCompanionClass);
+
+        MethodSpec nestedSetterMethod =
+            MethodSpec.methodBuilder(componentName)
+                .addModifiers(Modifier.PUBLIC)
+                .addParameter(nestedUpdaterConsumerType, componentName + "Updater")
+                .returns(ClassName.bestGuess("Builder"))
+                .addCode(nestedSetterBody)
+                .build();
+
+        builderBuilder.addMethod(nestedSetterMethod);
+      }
     }
 
     // Add build() method
@@ -221,5 +275,55 @@ public class BuilderGenerator {
     body.addStatement("return builder.build()");
 
     return body.build();
+  }
+
+  /** Generates the method body for nested record setter methods. */
+  private CodeBlock generateNestedSetterBody(String componentName, ClassName nestedCompanionClass) {
+    CodeBlock.Builder body = CodeBlock.builder();
+
+    // Update existing nested record or create new one if null
+    body.beginControlFlow("if (this.$N != null)", componentName);
+    body.addStatement(
+        "this.$N = $T.with(this.$N, $NUpdater)",
+        componentName,
+        nestedCompanionClass,
+        componentName,
+        componentName);
+    body.nextControlFlow("else");
+    body.addStatement(
+        "this.$N = $T.with($T.builder().build(), $NUpdater)",
+        componentName,
+        nestedCompanionClass,
+        nestedCompanionClass,
+        componentName);
+    body.endControlFlow();
+    body.addStatement("return this");
+
+    return body.build();
+  }
+
+  /** Checks if a record component type is a record with @Builder annotation. */
+  private boolean isBuilderAnnotatedRecord(RecordComponentElement component) {
+    TypeMirror componentType = component.asType();
+
+    if (!(componentType instanceof DeclaredType)) {
+      return false;
+    }
+
+    DeclaredType declaredType = (DeclaredType) componentType;
+    TypeElement typeElement = (TypeElement) declaredType.asElement();
+
+    // Check if it's a record and has @Builder annotation
+    return typeElement.getKind() == ElementKind.RECORD
+        && typeElement.getAnnotation(Builder.class) != null;
+  }
+
+  /** Gets the companion class name for a given record type. */
+  private ClassName getCompanionClassName(TypeElement recordElement) {
+    String packageName =
+        processingEnv.getElementUtils().getPackageOf(recordElement).getQualifiedName().toString();
+    String recordName = recordElement.getSimpleName().toString();
+    String companionName = recordName + "Companion";
+    return ClassName.get(packageName, companionName);
   }
 }
