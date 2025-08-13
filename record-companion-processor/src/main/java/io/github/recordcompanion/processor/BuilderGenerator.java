@@ -1,5 +1,6 @@
 package io.github.recordcompanion.processor;
 
+import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.JavaFile;
@@ -10,6 +11,7 @@ import com.squareup.javapoet.TypeSpec;
 import com.squareup.javapoet.TypeVariableName;
 import io.github.recordcompanion.annotations.Builder;
 import java.io.IOException;
+import javax.annotation.processing.Generated;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -126,6 +128,10 @@ public class BuilderGenerator {
     TypeSpec.Builder companionBuilder =
         TypeSpec.classBuilder(companionName)
             .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+            .addAnnotation(
+                AnnotationSpec.builder(Generated.class)
+                    .addMember("value", "$S", "io.github.recordcompanion.processor.RecordCompanionProcessor")
+                    .build())
             .addJavadoc(
                 "Generated companion class for {@link $T} record with builder pattern support.\n",
                 recordClass)
@@ -160,6 +166,10 @@ public class BuilderGenerator {
     TypeSpec.Builder updaterBuilder =
         TypeSpec.interfaceBuilder("Updater")
             .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+            .addAnnotation(
+                AnnotationSpec.builder(Generated.class)
+                    .addMember("value", "$S", "io.github.recordcompanion.processor.RecordCompanionProcessor")
+                    .build())
             .addJavadoc("Interface for updating record values without exposing build method.\n");
 
     // Add type parameters to the interface
@@ -234,6 +244,10 @@ public class BuilderGenerator {
     TypeSpec.Builder builderBuilder =
         TypeSpec.classBuilder("Builder")
             .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
+            .addAnnotation(
+                AnnotationSpec.builder(Generated.class)
+                    .addMember("value", "$S", "io.github.recordcompanion.processor.RecordCompanionProcessor")
+                    .build())
             .addSuperinterface(updaterInterfaceType);
 
     // Add type parameters to the builder class
