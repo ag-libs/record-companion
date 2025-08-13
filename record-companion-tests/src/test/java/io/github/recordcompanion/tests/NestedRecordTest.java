@@ -50,9 +50,7 @@ class NestedRecordTest {
     Person updated =
         PersonCompanion.with(
             personWithNullAddress,
-            updater ->
-                updater.address(
-                    au -> au.street("999 New St").city("Seattle").zipCode("98101")));
+            u -> u.address(au -> au.street("999 New St").city("Seattle").zipCode("98101")));
 
     assertEquals("Bob", updated.name());
     assertEquals(35, updated.age());
@@ -78,9 +76,7 @@ class NestedRecordTest {
 
     // Then, use fluent update on the new address with chaining
     Person finalUpdate =
-        PersonCompanion.with(
-            withNewAddress,
-            u -> u.address(au -> au.zipCode("80202")));
+        PersonCompanion.with(withNewAddress, u -> u.address(au -> au.zipCode("80202")));
 
     assertEquals("222 Second St", finalUpdate.address().street()); // unchanged
     assertEquals("Denver", finalUpdate.address().city()); // unchanged
