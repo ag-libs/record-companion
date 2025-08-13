@@ -11,11 +11,11 @@ import com.squareup.javapoet.TypeSpec;
 import com.squareup.javapoet.TypeVariableName;
 import io.github.recordcompanion.annotations.Builder;
 import java.io.IOException;
-import java.util.Objects;
-import javax.annotation.processing.Generated;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.processing.Generated;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
@@ -28,10 +28,12 @@ import javax.lang.model.type.TypeMirror;
 /** Generates builder pattern implementations for record classes. */
 public class BuilderGenerator {
 
-  private static final String GENERATOR_VALUE = "io.github.recordcompanion.processor.RecordCompanionProcessor";
+  private static final String GENERATOR_VALUE =
+      "io.github.recordcompanion.processor.RecordCompanionProcessor";
   private static final String BUILDER_SUFFIX = "Builder";
   private static final String UPDATER_SUFFIX = "Updater";
-  
+  private static final ClassName CONSUMER_TYPE = ClassName.get("java.util.function", "Consumer");
+
   private final ProcessingEnvironment processingEnv;
 
   public BuilderGenerator(ProcessingEnvironment processingEnv) {
@@ -41,11 +43,12 @@ public class BuilderGenerator {
   private String joinTypeParameters(List<TypeVariableName> typeVariableNames) {
     return typeVariableNames.stream()
         .map(TypeVariableName::toString)
-        .collect(java.util.stream.Collectors.joining(", "));
+        .collect(Collectors.joining(", "));
   }
 
   /** Creates a parameterized TypeName from a base class and type variables. */
-  private TypeName createParameterizedTypeOrSimple(ClassName baseClass, List<TypeVariableName> typeVariableNames) {
+  private TypeName createParameterizedTypeOrSimple(
+      ClassName baseClass, List<TypeVariableName> typeVariableNames) {
     return typeVariableNames.isEmpty()
         ? baseClass
         : ParameterizedTypeName.get(baseClass, typeVariableNames.toArray(new TypeName[0]));
@@ -60,11 +63,10 @@ public class BuilderGenerator {
     List<? extends TypeMirror> nestedTypeArguments = declaredType.getTypeArguments();
     if (nestedTypeArguments.isEmpty()) {
       return nestedUpdaterClass;
-    } else {
-      TypeName[] nestedTypeNames =
-          nestedTypeArguments.stream().map(TypeName::get).toArray(TypeName[]::new);
-      return ParameterizedTypeName.get(nestedUpdaterClass, nestedTypeNames);
     }
+    TypeName[] nestedTypeNames =
+        nestedTypeArguments.stream().map(TypeName::get).toArray(TypeName[]::new);
+    return ParameterizedTypeName.get(nestedUpdaterClass, nestedTypeNames);
   }
 
   private MethodSpec createNestedSetterMethod(
@@ -75,10 +77,9 @@ public class BuilderGenerator {
     String updaterParamName = generateUpdaterParameterName(nestedRecordElement);
     String componentName = component.getSimpleName().toString();
 
-    ClassName consumerType = ClassName.get("java.util.function", "Consumer");
     TypeName nestedUpdaterType = createNestedUpdaterType(declaredType, nestedUpdaterClass);
     ParameterizedTypeName nestedUpdaterConsumerType =
-        ParameterizedTypeName.get(consumerType, nestedUpdaterType);
+        ParameterizedTypeName.get(CONSUMER_TYPE, nestedUpdaterType);
 
     MethodSpec.Builder methodBuilder =
         MethodSpec.methodBuilder(componentName)
@@ -107,9 +108,9 @@ public class BuilderGenerator {
     return methodBuilder.build();
   }
 
-  /** 
+  /**
    * Generates separate builder class and updater interface for the given record.
-   * 
+   *
    * @param recordElement the record element to generate builder and updater for
    * @throws IOException if there's an error writing the generated files
    * @throws NullPointerException if recordElement is null
@@ -138,18 +139,20 @@ public class BuilderGenerator {
     generateStandaloneUpdaterInterface(recordName, packageName, components, typeVariableNames);
 
     // Generate the XxxBuilder class (implements XxxUpdater)
-    generateStandaloneBuilderClass(recordName, packageName, recordTypeName, components, typeVariableNames);
+    generateStandaloneBuilderClass(
+        recordName, packageName, recordTypeName, components, typeVariableNames);
   }
 
   /** Generates a standalone XxxUpdater interface file. */
   private void generateStandaloneUpdaterInterface(
-      String recordName, 
-      String packageName, 
-      List<? extends RecordComponentElement> components, 
-      List<TypeVariableName> typeVariableNames) throws IOException {
-    
+      String recordName,
+      String packageName,
+      List<? extends RecordComponentElement> components,
+      List<TypeVariableName> typeVariableNames)
+      throws IOException {
+
     String updaterName = recordName + UPDATER_SUFFIX;
-    
+
     TypeSpec.Builder updaterBuilder =
         TypeSpec.interfaceBuilder(updaterName)
             .addModifiers(Modifier.PUBLIC)
@@ -165,8 +168,8 @@ public class BuilderGenerator {
     }
 
     // Create the updater interface type for return types
-    TypeName updaterInterfaceType = createParameterizedTypeOrSimple(
-        ClassName.get(packageName, updaterName), typeVariableNames);
+    TypeName updaterInterfaceType =
+        createParameterizedTypeOrSimple(ClassName.get(packageName, updaterName), typeVariableNames);
 
     // Add setter methods to updater interface
     addSetterMethodsToUpdaterInterface(updaterBuilder, components, updaterInterfaceType);
@@ -174,26 +177,31 @@ public class BuilderGenerator {
     TypeSpec updaterInterface = updaterBuilder.build();
 
     // Write the updater interface to a file
-    JavaFile javaFile = JavaFile.builder(packageName, updaterInterface).skipJavaLangImports(true).build();
+    JavaFile javaFile =
+        JavaFile.builder(packageName, updaterInterface)
+            .skipJavaLangImports(true)
+            .build();
     javaFile.writeTo(processingEnv.getFiler());
   }
 
   /** Generates a standalone XxxBuilder class file. */
   private void generateStandaloneBuilderClass(
-      String recordName, 
-      String packageName, 
-      TypeName recordTypeName, 
-      List<? extends RecordComponentElement> components, 
-      List<TypeVariableName> typeVariableNames) throws IOException {
-    
+      String recordName,
+      String packageName,
+      TypeName recordTypeName,
+      List<? extends RecordComponentElement> components,
+      List<TypeVariableName> typeVariableNames)
+      throws IOException {
+
     String builderName = recordName + BUILDER_SUFFIX;
     String updaterName = recordName + UPDATER_SUFFIX;
-    
+
     ClassName builderClass = ClassName.get(packageName, builderName);
     ClassName updaterInterface = ClassName.get(packageName, updaterName);
 
     // Create the updater interface type for implements clause
-    TypeName updaterInterfaceType = createParameterizedTypeOrSimple(updaterInterface, typeVariableNames);
+    TypeName updaterInterfaceType =
+        createParameterizedTypeOrSimple(updaterInterface, typeVariableNames);
 
     // Create the builder class type for return types
     TypeName builderClassType = createParameterizedTypeOrSimple(builderClass, typeVariableNames);
@@ -227,12 +235,15 @@ public class BuilderGenerator {
     builderBuilder.addMethod(
         generateStaticBuilderWithExistingMethod(
             recordTypeName, builderClass, components, typeVariableNames));
-    builderBuilder.addMethod(generateStaticWithMethod(recordTypeName, builderClass, updaterInterface, typeVariableNames));
+    builderBuilder.addMethod(
+        generateStaticWithMethod(recordTypeName, updaterInterface, typeVariableNames));
 
     TypeSpec builder = builderBuilder.build();
 
     // Write the builder class to a file
-    JavaFile javaFile = JavaFile.builder(packageName, builder).skipJavaLangImports(true).build();
+    JavaFile javaFile = JavaFile.builder(packageName, builder)
+        .skipJavaLangImports(true)
+        .build();
     javaFile.writeTo(processingEnv.getFiler());
   }
 
@@ -242,9 +253,8 @@ public class BuilderGenerator {
     // Create the Builder return type with proper type parameters
     TypeName builderReturnType = createParameterizedTypeOrSimple(builderClass, typeVariableNames);
 
-    String builderConstructor = typeVariableNames.isEmpty() 
-        ? "return new " + builderClass.simpleName() + "()" 
-        : "return new " + builderClass.simpleName() + "<>()";
+    String constructorCall = typeVariableNames.isEmpty() ? "()" : "<>()";
+    String builderConstructor = "return new " + builderClass.simpleName() + constructorCall;
 
     MethodSpec.Builder methodBuilder =
         MethodSpec.methodBuilder("builder")
@@ -267,7 +277,7 @@ public class BuilderGenerator {
       ClassName builderClass,
       List<? extends RecordComponentElement> components,
       List<TypeVariableName> typeVariableNames) {
-    
+
     // Create the Builder return type with proper type parameters
     TypeName builderReturnType = createParameterizedTypeOrSimple(builderClass, typeVariableNames);
 
@@ -280,7 +290,8 @@ public class BuilderGenerator {
                 "Creates a new builder instance initialized with values from an existing record.\n")
             .addJavadoc("@param existing the existing record to copy values from\n")
             .addJavadoc("@return a new builder instance with copied values\n")
-            .addCode(generateStaticBuilderWithExistingBody(builderClass, components, typeVariableNames));
+            .addCode(
+                generateStaticBuilderWithExistingBody(builderClass, components, typeVariableNames));
 
     // Add type parameters to the method
     for (TypeVariableName typeVariableName : typeVariableNames) {
@@ -291,8 +302,8 @@ public class BuilderGenerator {
   }
 
   private CodeBlock generateStaticBuilderWithExistingBody(
-      ClassName builderClass, 
-      List<? extends RecordComponentElement> components, 
+      ClassName builderClass,
+      List<? extends RecordComponentElement> components,
       List<TypeVariableName> typeVariableNames) {
     CodeBlock.Builder body = CodeBlock.builder();
 
@@ -315,17 +326,13 @@ public class BuilderGenerator {
   }
 
   private MethodSpec generateStaticWithMethod(
-      TypeName recordTypeName, 
-      ClassName builderClass, 
-      ClassName updaterInterface, 
+      TypeName recordTypeName,
+      ClassName updaterInterface,
       List<TypeVariableName> typeVariableNames) {
-    ClassName consumerType = ClassName.get("java.util.function", "Consumer");
-
     // Create the Updater type with proper type parameters for the Consumer
     TypeName updaterType = createParameterizedTypeOrSimple(updaterInterface, typeVariableNames);
-
     ParameterizedTypeName updaterConsumerType =
-        ParameterizedTypeName.get(consumerType, updaterType);
+        ParameterizedTypeName.get(CONSUMER_TYPE, updaterType);
 
     MethodSpec.Builder methodBuilder =
         MethodSpec.methodBuilder("with")
@@ -339,7 +346,7 @@ public class BuilderGenerator {
             .addJavadoc(
                 "@param updater a consumer that receives an updater initialized with the existing record's values\n")
             .addJavadoc("@return a new record instance with the applied modifications\n")
-            .addCode(generateStaticWithMethodBody(typeVariableNames));
+            .addCode(generateStaticWithMethodBody());
 
     // Add type parameters to the method
     for (TypeVariableName typeVariableName : typeVariableNames) {
@@ -349,17 +356,11 @@ public class BuilderGenerator {
     return methodBuilder.build();
   }
 
-  private CodeBlock generateStaticWithMethodBody(List<TypeVariableName> typeVariableNames) {
+  private CodeBlock generateStaticWithMethodBody() {
     CodeBlock.Builder body = CodeBlock.builder();
 
     // Generate Builder type with proper type parameters
-    if (typeVariableNames.isEmpty()) {
-      body.addStatement("var builder = builder(existing)");
-    } else {
-      String typeParams = joinTypeParameters(typeVariableNames);
-      body.addStatement("var builder = builder(existing)");
-    }
-
+    body.addStatement("var builder = builder(existing)");
     body.addStatement("updater.accept(builder)");
     body.addStatement("return builder.build()");
 
