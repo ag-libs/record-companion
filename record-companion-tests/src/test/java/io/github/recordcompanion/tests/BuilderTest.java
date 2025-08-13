@@ -43,7 +43,7 @@ class BuilderTest {
         UserCompanion.with(
             original,
             updater -> {
-              updater.age(31);
+              updater.age(original.age() + 1);
               updater.email("john.doe@example.com");
             });
 

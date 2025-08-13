@@ -402,13 +402,13 @@ public class BuilderGenerator {
         MethodSpec.methodBuilder("with")
             .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
             .addParameter(recordTypeName, "existing")
-            .addParameter(updaterConsumerType, "u")
+            .addParameter(updaterConsumerType, "updater")
             .returns(recordTypeName)
             .addJavadoc(
                 "Creates a new record instance by applying modifications to an existing record.\n")
             .addJavadoc("@param existing the existing record to base the new record on\n")
             .addJavadoc(
-                "@param u a consumer that receives an updater initialized with the existing record's values\n")
+                "@param updater a consumer that receives an updater initialized with the existing record's values\n")
             .addJavadoc("@return a new record instance with the applied modifications\n")
             .addCode(generateWithMethodBody(typeVariableNames));
 
@@ -431,7 +431,7 @@ public class BuilderGenerator {
       body.addStatement("Builder<$L> builder = builder(existing)", typeParams);
     }
 
-    body.addStatement("u.accept(builder)");
+    body.addStatement("updater.accept(builder)");
     body.addStatement("return builder.build()");
 
     return body.build();
@@ -497,27 +497,15 @@ public class BuilderGenerator {
   }
 
   /**
-   * Generates a short parameter name from a class name by taking first letters of camelCase words +
-   * 'u'. Examples: Address -> au, PersonUpdater -> pu, MyType -> mtu
+   * Generates a descriptive parameter name from a class name by converting to camelCase and adding
+   * 'Updater' suffix. Examples: Address -> addressUpdater, PersonDetails -> personDetailsUpdater
    */
   private String generateUpdaterParameterName(String className) {
-    StringBuilder result = new StringBuilder();
-
-    // Add first character (always lowercase)
-    if (!className.isEmpty()) {
-      result.append(Character.toLowerCase(className.charAt(0)));
+    if (className.isEmpty()) {
+      return "updater";
     }
 
-    // Add first letter of each subsequent camelCase word
-    for (int i = 1; i < className.length(); i++) {
-      if (Character.isUpperCase(className.charAt(i))) {
-        result.append(Character.toLowerCase(className.charAt(i)));
-      }
-    }
-
-    // Add 'u' suffix
-    result.append('u');
-
-    return result.toString();
+    // Convert first character to lowercase and append "Updater"
+    return Character.toLowerCase(className.charAt(0)) + className.substring(1) + "Updater";
   }
 }
