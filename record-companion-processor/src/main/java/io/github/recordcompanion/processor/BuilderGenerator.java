@@ -31,6 +31,69 @@ public class BuilderGenerator {
     this.processingEnv = processingEnv;
   }
 
+  private String joinTypeParameters(List<TypeVariableName> typeVariableNames) {
+    return typeVariableNames.stream()
+        .map(TypeVariableName::toString)
+        .collect(java.util.stream.Collectors.joining(", "));
+  }
+
+  private String generateUpdaterParameterName(TypeElement recordElement) {
+    return generateUpdaterParameterName(recordElement.getSimpleName().toString());
+  }
+
+  private TypeName createNestedUpdaterType(
+      DeclaredType declaredType, ClassName nestedCompanionClass) {
+    List<? extends TypeMirror> nestedTypeArguments = declaredType.getTypeArguments();
+    if (nestedTypeArguments.isEmpty()) {
+      return nestedCompanionClass.nestedClass("Updater");
+    } else {
+      TypeName[] nestedTypeNames =
+          nestedTypeArguments.stream().map(TypeName::get).toArray(TypeName[]::new);
+      return ParameterizedTypeName.get(
+          nestedCompanionClass.nestedClass("Updater"), nestedTypeNames);
+    }
+  }
+
+  private MethodSpec createNestedSetterMethod(
+      RecordComponentElement component, TypeName updaterInterfaceType, boolean isInterface) {
+    DeclaredType declaredType = (DeclaredType) component.asType();
+    TypeElement nestedRecordElement = (TypeElement) declaredType.asElement();
+    ClassName nestedCompanionClass = getCompanionClassName(nestedRecordElement);
+    String updaterParamName = generateUpdaterParameterName(nestedRecordElement);
+    String componentName = component.getSimpleName().toString();
+
+    ClassName consumerType = ClassName.get("java.util.function", "Consumer");
+    TypeName nestedUpdaterType = createNestedUpdaterType(declaredType, nestedCompanionClass);
+    ParameterizedTypeName nestedUpdaterConsumerType =
+        ParameterizedTypeName.get(consumerType, nestedUpdaterType);
+
+    MethodSpec.Builder methodBuilder =
+        MethodSpec.methodBuilder(componentName)
+            .addParameter(nestedUpdaterConsumerType, updaterParamName)
+            .returns(updaterInterfaceType)
+            .addJavadoc("Updates the $N value using a fluent updater.\n", componentName)
+            .addJavadoc(
+                "@param $N consumer that receives an updater for the nested $N\n",
+                updaterParamName,
+                componentName)
+            .addJavadoc("@return this updater for method chaining\n");
+
+    if (isInterface) {
+      methodBuilder.addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT);
+    } else {
+      methodBuilder
+          .addModifiers(Modifier.PUBLIC)
+          .addCode(
+              generateNestedSetterBody(
+                  componentName,
+                  nestedCompanionClass,
+                  updaterParamName,
+                  TypeName.get(component.asType())));
+    }
+
+    return methodBuilder.build();
+  }
+
   /** Generates a companion class with builder methods for the given record. */
   public void generateCompanionClass(TypeElement recordElement) throws IOException {
     String recordName = recordElement.getSimpleName().toString();
@@ -51,11 +114,6 @@ public class BuilderGenerator {
         typeVariableNames.isEmpty()
             ? recordClass
             : ParameterizedTypeName.get(recordClass, typeVariableNames.toArray(new TypeName[0]));
-    TypeName companionTypeName =
-        typeVariableNames.isEmpty()
-            ? companionClass
-            : ParameterizedTypeName.get(companionClass, typeVariableNames.toArray(new TypeName[0]));
-
     List<? extends RecordComponentElement> components = recordElement.getRecordComponents();
 
     // Generate the Updater interface
@@ -78,8 +136,7 @@ public class BuilderGenerator {
             .addMethod(
                 generateBuilderWithExistingMethod(
                     recordTypeName, companionClass, components, typeVariableNames))
-            .addMethod(
-                generateWithMethod(recordTypeName, companionClass, components, typeVariableNames));
+            .addMethod(generateWithMethod(recordTypeName, companionClass, typeVariableNames));
 
     TypeSpec companion = companionBuilder.build();
 
@@ -91,6 +148,15 @@ public class BuilderGenerator {
 
   private TypeSpec generateUpdaterInterface(
       List<? extends RecordComponentElement> components, List<TypeVariableName> typeVariableNames) {
+    TypeSpec.Builder updaterBuilder = createUpdaterInterfaceBuilder(typeVariableNames);
+    TypeName updaterInterfaceType = createUpdaterInterfaceType(typeVariableNames);
+
+    addSetterMethodsToUpdaterInterface(updaterBuilder, components, updaterInterfaceType);
+
+    return updaterBuilder.build();
+  }
+
+  private TypeSpec.Builder createUpdaterInterfaceBuilder(List<TypeVariableName> typeVariableNames) {
     TypeSpec.Builder updaterBuilder =
         TypeSpec.interfaceBuilder("Updater")
             .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
@@ -101,14 +167,20 @@ public class BuilderGenerator {
       updaterBuilder.addTypeVariable(typeVariableName);
     }
 
-    // Create the Updater interface type with proper type parameters
-    TypeName updaterInterfaceType =
-        typeVariableNames.isEmpty()
-            ? ClassName.bestGuess("Updater")
-            : ParameterizedTypeName.get(
-                ClassName.bestGuess("Updater"), typeVariableNames.toArray(new TypeName[0]));
+    return updaterBuilder;
+  }
 
-    // Add setter method declarations for each component
+  private TypeName createUpdaterInterfaceType(List<TypeVariableName> typeVariableNames) {
+    return typeVariableNames.isEmpty()
+        ? ClassName.bestGuess("Updater")
+        : ParameterizedTypeName.get(
+            ClassName.bestGuess("Updater"), typeVariableNames.toArray(new TypeName[0]));
+  }
+
+  private void addSetterMethodsToUpdaterInterface(
+      TypeSpec.Builder updaterBuilder,
+      List<? extends RecordComponentElement> components,
+      TypeName updaterInterfaceType) {
     for (RecordComponentElement component : components) {
       String componentName = component.getSimpleName().toString();
       TypeMirror componentType = component.asType();
@@ -128,48 +200,9 @@ public class BuilderGenerator {
 
       // Generate overloaded method for @Builder-annotated record types
       if (isBuilderAnnotatedRecord(component)) {
-        DeclaredType declaredType = (DeclaredType) componentType;
-        TypeElement nestedRecordElement = (TypeElement) declaredType.asElement();
-        ClassName nestedCompanionClass = getCompanionClassName(nestedRecordElement);
-        String updaterParamName =
-            generateUpdaterParameterName(nestedRecordElement.getSimpleName().toString());
-
-        ClassName consumerType = ClassName.get("java.util.function", "Consumer");
-
-        // Extract type parameters from the nested record type
-        List<? extends TypeMirror> nestedTypeArguments = declaredType.getTypeArguments();
-        TypeName nestedUpdaterType;
-        if (nestedTypeArguments.isEmpty()) {
-          nestedUpdaterType = nestedCompanionClass.nestedClass("Updater");
-        } else {
-          TypeName[] nestedTypeNames =
-              nestedTypeArguments.stream().map(TypeName::get).toArray(TypeName[]::new);
-          nestedUpdaterType =
-              ParameterizedTypeName.get(
-                  nestedCompanionClass.nestedClass("Updater"), nestedTypeNames);
-        }
-
-        ParameterizedTypeName nestedUpdaterConsumerType =
-            ParameterizedTypeName.get(consumerType, nestedUpdaterType);
-
-        MethodSpec nestedSetterMethod =
-            MethodSpec.methodBuilder(componentName)
-                .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
-                .addParameter(nestedUpdaterConsumerType, updaterParamName)
-                .returns(updaterInterfaceType)
-                .addJavadoc("Updates the $N value using a fluent updater.\n", componentName)
-                .addJavadoc(
-                    "@param $N consumer that receives an updater for the nested $N\n",
-                    updaterParamName,
-                    componentName)
-                .addJavadoc("@return this updater for method chaining\n")
-                .build();
-
-        updaterBuilder.addMethod(nestedSetterMethod);
+        updaterBuilder.addMethod(createNestedSetterMethod(component, updaterInterfaceType, true));
       }
     }
-
-    return updaterBuilder.build();
   }
 
   private TypeSpec generateBuilderClass(
@@ -177,20 +210,27 @@ public class BuilderGenerator {
       List<? extends RecordComponentElement> components,
       List<TypeVariableName> typeVariableNames) {
 
-    // Create the Updater interface type with proper type parameters
-    TypeName updaterInterfaceType =
-        typeVariableNames.isEmpty()
-            ? ClassName.bestGuess("Updater")
-            : ParameterizedTypeName.get(
-                ClassName.bestGuess("Updater"), typeVariableNames.toArray(new TypeName[0]));
+    TypeName updaterInterfaceType = createUpdaterInterfaceType(typeVariableNames);
+    TypeName builderClassType = createBuilderClassType(typeVariableNames);
 
-    // Create the Builder class type with proper type parameters
-    TypeName builderClassType =
-        typeVariableNames.isEmpty()
-            ? ClassName.bestGuess("Builder")
-            : ParameterizedTypeName.get(
-                ClassName.bestGuess("Builder"), typeVariableNames.toArray(new TypeName[0]));
+    TypeSpec.Builder builderBuilder =
+        createBuilderClassBuilder(updaterInterfaceType, typeVariableNames);
+    addFieldsToBuilderClass(builderBuilder, components);
+    addSetterMethodsToBuilderClass(builderBuilder, components, builderClassType);
+    addBuildMethodToBuilderClass(builderBuilder, recordTypeName, components);
 
+    return builderBuilder.build();
+  }
+
+  private TypeName createBuilderClassType(List<TypeVariableName> typeVariableNames) {
+    return typeVariableNames.isEmpty()
+        ? ClassName.bestGuess("Builder")
+        : ParameterizedTypeName.get(
+            ClassName.bestGuess("Builder"), typeVariableNames.toArray(new TypeName[0]));
+  }
+
+  private TypeSpec.Builder createBuilderClassBuilder(
+      TypeName updaterInterfaceType, List<TypeVariableName> typeVariableNames) {
     TypeSpec.Builder builderBuilder =
         TypeSpec.classBuilder("Builder")
             .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
@@ -201,13 +241,21 @@ public class BuilderGenerator {
       builderBuilder.addTypeVariable(typeVariableName);
     }
 
-    // Add fields for each component
+    return builderBuilder;
+  }
+
+  private void addFieldsToBuilderClass(
+      TypeSpec.Builder builderBuilder, List<? extends RecordComponentElement> components) {
     for (RecordComponentElement component : components) {
       builderBuilder.addField(
           TypeName.get(component.asType()), component.getSimpleName().toString(), Modifier.PRIVATE);
     }
+  }
 
-    // Add setter methods for each component
+  private void addSetterMethodsToBuilderClass(
+      TypeSpec.Builder builderBuilder,
+      List<? extends RecordComponentElement> components,
+      TypeName builderClassType) {
     for (RecordComponentElement component : components) {
       String componentName = component.getSimpleName().toString();
       TypeMirror componentType = component.asType();
@@ -226,47 +274,15 @@ public class BuilderGenerator {
 
       // Generate overloaded method for @Builder-annotated record types
       if (isBuilderAnnotatedRecord(component)) {
-        DeclaredType declaredType = (DeclaredType) componentType;
-        TypeElement nestedRecordElement = (TypeElement) declaredType.asElement();
-        ClassName nestedCompanionClass = getCompanionClassName(nestedRecordElement);
-        String updaterParamName =
-            generateUpdaterParameterName(nestedRecordElement.getSimpleName().toString());
-
-        ClassName consumerType = ClassName.get("java.util.function", "Consumer");
-
-        // Extract type parameters from the nested record type
-        List<? extends TypeMirror> nestedTypeArguments = declaredType.getTypeArguments();
-        TypeName nestedUpdaterType;
-        if (nestedTypeArguments.isEmpty()) {
-          nestedUpdaterType = nestedCompanionClass.nestedClass("Updater");
-        } else {
-          TypeName[] nestedTypeNames =
-              nestedTypeArguments.stream().map(TypeName::get).toArray(TypeName[]::new);
-          nestedUpdaterType =
-              ParameterizedTypeName.get(
-                  nestedCompanionClass.nestedClass("Updater"), nestedTypeNames);
-        }
-
-        ParameterizedTypeName nestedUpdaterConsumerType =
-            ParameterizedTypeName.get(consumerType, nestedUpdaterType);
-
-        CodeBlock nestedSetterBody =
-            generateNestedSetterBody(
-                componentName, nestedCompanionClass, updaterParamName, TypeName.get(componentType));
-
-        MethodSpec nestedSetterMethod =
-            MethodSpec.methodBuilder(componentName)
-                .addModifiers(Modifier.PUBLIC)
-                .addParameter(nestedUpdaterConsumerType, updaterParamName)
-                .returns(builderClassType)
-                .addCode(nestedSetterBody)
-                .build();
-
-        builderBuilder.addMethod(nestedSetterMethod);
+        builderBuilder.addMethod(createNestedSetterMethod(component, builderClassType, false));
       }
     }
+  }
 
-    // Add build() method
+  private void addBuildMethodToBuilderClass(
+      TypeSpec.Builder builderBuilder,
+      TypeName recordTypeName,
+      List<? extends RecordComponentElement> components) {
     CodeBlock.Builder buildMethodBody = CodeBlock.builder();
     buildMethodBody.add("return new $T(", recordTypeName);
 
@@ -284,8 +300,6 @@ public class BuilderGenerator {
             .build();
 
     builderBuilder.addMethod(buildMethod);
-
-    return builderBuilder.build();
   }
 
   private MethodSpec generateBuilderMethod(
@@ -356,10 +370,7 @@ public class BuilderGenerator {
     if (typeVariableNames.isEmpty()) {
       body.addStatement("Builder builder = new Builder()");
     } else {
-      String typeParams =
-          typeVariableNames.stream()
-              .map(TypeVariableName::toString)
-              .collect(java.util.stream.Collectors.joining(", "));
+      String typeParams = joinTypeParameters(typeVariableNames);
       body.addStatement("Builder<$L> builder = new Builder<>()", typeParams);
     }
 
@@ -374,10 +385,7 @@ public class BuilderGenerator {
   }
 
   private MethodSpec generateWithMethod(
-      TypeName recordTypeName,
-      ClassName companionClass,
-      List<? extends RecordComponentElement> components,
-      List<TypeVariableName> typeVariableNames) {
+      TypeName recordTypeName, ClassName companionClass, List<TypeVariableName> typeVariableNames) {
     ClassName consumerType = ClassName.get("java.util.function", "Consumer");
 
     // Create the Updater type with proper type parameters for the Consumer
@@ -402,7 +410,7 @@ public class BuilderGenerator {
             .addJavadoc(
                 "@param u a consumer that receives an updater initialized with the existing record's values\n")
             .addJavadoc("@return a new record instance with the applied modifications\n")
-            .addCode(generateWithMethodBody(components, typeVariableNames));
+            .addCode(generateWithMethodBody(typeVariableNames));
 
     // Add type parameters to the method
     for (TypeVariableName typeVariableName : typeVariableNames) {
@@ -412,18 +420,14 @@ public class BuilderGenerator {
     return methodBuilder.build();
   }
 
-  private CodeBlock generateWithMethodBody(
-      List<? extends RecordComponentElement> components, List<TypeVariableName> typeVariableNames) {
+  private CodeBlock generateWithMethodBody(List<TypeVariableName> typeVariableNames) {
     CodeBlock.Builder body = CodeBlock.builder();
 
     // Generate Builder type with proper type parameters
     if (typeVariableNames.isEmpty()) {
       body.addStatement("Builder builder = builder(existing)");
     } else {
-      String typeParams =
-          typeVariableNames.stream()
-              .map(TypeVariableName::toString)
-              .collect(java.util.stream.Collectors.joining(", "));
+      String typeParams = joinTypeParameters(typeVariableNames);
       body.addStatement("Builder<$L> builder = builder(existing)", typeParams);
     }
 
@@ -452,8 +456,7 @@ public class BuilderGenerator {
     body.nextControlFlow("else");
     // Create a new builder, apply the consumer, then build
     // Extract type arguments from the component type for proper generic support
-    if (componentTypeName instanceof ParameterizedTypeName) {
-      ParameterizedTypeName parameterizedType = (ParameterizedTypeName) componentTypeName;
+    if (componentTypeName instanceof ParameterizedTypeName parameterizedType) {
       TypeName[] typeArguments = parameterizedType.typeArguments.toArray(new TypeName[0]);
       String typeArgsStr =
           Stream.of(typeArguments).map(TypeName::toString).collect(Collectors.joining(", "));
@@ -473,11 +476,10 @@ public class BuilderGenerator {
   private boolean isBuilderAnnotatedRecord(RecordComponentElement component) {
     TypeMirror componentType = component.asType();
 
-    if (!(componentType instanceof DeclaredType)) {
+    if (!(componentType instanceof DeclaredType declaredType)) {
       return false;
     }
 
-    DeclaredType declaredType = (DeclaredType) componentType;
     TypeElement typeElement = (TypeElement) declaredType.asElement();
 
     // Check if it's a record and has @Builder annotation
