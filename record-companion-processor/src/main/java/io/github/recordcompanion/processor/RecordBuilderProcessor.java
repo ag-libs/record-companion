@@ -16,12 +16,12 @@ import javax.tools.Diagnostic;
 /**
  * Annotation processor for RecordCompanion library.
  *
- * <p>Processes @Builder annotations on record classes and generates separate Builder classes 
- * and Updater interfaces with builder pattern implementations.
+ * <p>Processes @Builder annotations on record classes and generates separate Builder classes and
+ * Updater interfaces with builder pattern implementations.
  */
 @SupportedAnnotationTypes("io.github.recordcompanion.annotations.Builder")
 @SupportedSourceVersion(SourceVersion.RELEASE_17)
-public class RecordCompanionProcessor extends AbstractProcessor {
+public class RecordBuilderProcessor extends AbstractProcessor {
 
   private BuilderGenerator builderGenerator;
 

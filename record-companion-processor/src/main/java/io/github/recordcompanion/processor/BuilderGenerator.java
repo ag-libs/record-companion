@@ -29,7 +29,7 @@ import javax.lang.model.type.TypeMirror;
 public class BuilderGenerator {
 
   private static final String GENERATOR_VALUE =
-      "io.github.recordcompanion.processor.RecordCompanionProcessor";
+      "io.github.recordcompanion.processor.RecordBuilderProcessor";
   private static final String BUILDER_SUFFIX = "Builder";
   private static final String UPDATER_SUFFIX = "Updater";
   private static final ClassName CONSUMER_TYPE = ClassName.get("java.util.function", "Consumer");
@@ -178,9 +178,7 @@ public class BuilderGenerator {
 
     // Write the updater interface to a file
     JavaFile javaFile =
-        JavaFile.builder(packageName, updaterInterface)
-            .skipJavaLangImports(true)
-            .build();
+        JavaFile.builder(packageName, updaterInterface).skipJavaLangImports(true).build();
     javaFile.writeTo(processingEnv.getFiler());
   }
 
@@ -241,9 +239,7 @@ public class BuilderGenerator {
     TypeSpec builder = builderBuilder.build();
 
     // Write the builder class to a file
-    JavaFile javaFile = JavaFile.builder(packageName, builder)
-        .skipJavaLangImports(true)
-        .build();
+    JavaFile javaFile = JavaFile.builder(packageName, builder).skipJavaLangImports(true).build();
     javaFile.writeTo(processingEnv.getFiler());
   }
 

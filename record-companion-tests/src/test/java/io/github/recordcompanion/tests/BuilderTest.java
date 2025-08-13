@@ -67,8 +67,7 @@ class BuilderTest {
   @Test
   void testBuilderChaining() {
     // Test that Builder methods return Builder for proper chaining
-    User user =
-        UserBuilder.builder().name("Chained").age(25).email("chained@example.com").build();
+    User user = UserBuilder.builder().name("Chained").age(25).email("chained@example.com").build();
 
     assertEquals("Chained", user.name());
     assertEquals(25, user.age());
