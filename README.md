@@ -5,7 +5,7 @@ A Java annotation processing library that enhances Java records with builder pat
 ## Features
 
 - **@Builder Annotation**: Generates builder pattern implementations for Java records
-- **Clean Code Generation**: Creates readable companion classes with fluent APIs
+- **Clean Code Generation**: Creates readable Builder classes and Updater interfaces with fluent APIs
 - **Zero Runtime Dependencies**: Pure compile-time annotation processing
 - **Java 17+ Support**: Built for modern Java with record support
 
@@ -23,7 +23,7 @@ public record User(String name, int age, String email) {}
 Use the generated builder:
 
 ```java
-User user = UserCompanion.builder()
+User user = UserBuilder.builder()
     .name("John Doe")
     .age(30)
     .email("john@example.com")

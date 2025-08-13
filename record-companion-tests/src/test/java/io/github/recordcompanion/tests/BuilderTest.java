@@ -3,7 +3,7 @@ package io.github.recordcompanion.tests;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.recordcompanion.tests.records.User;
-import io.github.recordcompanion.tests.records.UserCompanion;
+import io.github.recordcompanion.tests.records.UserBuilder;
 import org.junit.jupiter.api.Test;
 
 class BuilderTest {
@@ -11,7 +11,7 @@ class BuilderTest {
   @Test
   void testBuilderGeneration() {
     // Test that we can create a User using the generated builder
-    User user = UserCompanion.builder().name("John Doe").age(30).email("john@example.com").build();
+    User user = UserBuilder.builder().name("John Doe").age(30).email("john@example.com").build();
 
     assertEquals("John Doe", user.name());
     assertEquals(30, user.age());
@@ -24,7 +24,7 @@ class BuilderTest {
 
     // Test builder with existing record - should copy values and allow chaining
     User copy =
-        UserCompanion.builder(original)
+        UserBuilder.builder(original)
             .age(26) // modify age with chaining
             .email("jane.doe@example.com") // chain another modification
             .build();
@@ -40,7 +40,7 @@ class BuilderTest {
 
     // Test the with method using Updater interface (build method is hidden)
     User updated =
-        UserCompanion.with(
+        UserBuilder.with(
             original,
             updater -> {
               updater.age(original.age() + 1);
@@ -57,7 +57,7 @@ class BuilderTest {
     User original = new User("Alice", 28, "alice@example.com");
 
     // Test the with method with single property change using Updater
-    User updated = UserCompanion.with(original, updater -> updater.age(29));
+    User updated = UserBuilder.with(original, updater -> updater.age(29));
 
     assertEquals("Alice", updated.name());
     assertEquals(29, updated.age());
@@ -68,7 +68,7 @@ class BuilderTest {
   void testBuilderChaining() {
     // Test that Builder methods return Builder for proper chaining
     User user =
-        UserCompanion.builder().name("Chained").age(25).email("chained@example.com").build();
+        UserBuilder.builder().name("Chained").age(25).email("chained@example.com").build();
 
     assertEquals("Chained", user.name());
     assertEquals(25, user.age());

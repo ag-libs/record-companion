@@ -8,8 +8,8 @@ import java.lang.annotation.Target;
 /**
  * Annotation to generate a builder pattern implementation for Java records.
  *
- * <p>When applied to a record class, this annotation will generate a companion class with builder
- * methods for all record components.
+ * <p>When applied to a record class, this annotation will generate separate Builder class and
+ * Updater interface with builder pattern support for all record components.
  *
  * <p>Example usage:
  *
@@ -17,12 +17,13 @@ import java.lang.annotation.Target;
  * @Builder
  * public record User(String name, int age, String email) {}
  *
- * // Generates UserCompanion class with:
- * // - UserCompanion.builder()
- * // - UserCompanion.builder(User existing)
+ * // Generates UserBuilder class and UserUpdater interface with:
+ * // - UserBuilder.builder()
+ * // - UserBuilder.builder(User existing)
+ * // - UserBuilder.with(User existing, Consumer<UserUpdater> updater)
  *
  * // Usage:
- * User user = UserCompanion.builder()
+ * User user = UserBuilder.builder()
  *     .name("John")
  *     .age(30)
  *     .email("john@example.com")

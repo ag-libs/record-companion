@@ -3,9 +3,9 @@ package io.github.recordcompanion.tests;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.recordcompanion.tests.records.Address;
-import io.github.recordcompanion.tests.records.AddressCompanion;
+import io.github.recordcompanion.tests.records.AddressBuilder;
 import io.github.recordcompanion.tests.records.Person;
-import io.github.recordcompanion.tests.records.PersonCompanion;
+import io.github.recordcompanion.tests.records.PersonBuilder;
 import org.junit.jupiter.api.Test;
 
 class NestedRecordTest {
@@ -14,9 +14,9 @@ class NestedRecordTest {
   void testNestedRecordBuilding() {
     // Test building a Person with nested Address using chained method calls
     Address address =
-        AddressCompanion.builder().street("123 Main St").city("New York").zipCode("10001").build();
+        AddressBuilder.builder().street("123 Main St").city("New York").zipCode("10001").build();
 
-    Person person = PersonCompanion.builder().name("John Doe").age(30).address(address).build();
+    Person person = PersonBuilder.builder().name("John Doe").age(30).address(address).build();
 
     assertEquals("John Doe", person.name());
     assertEquals(30, person.age());
@@ -31,7 +31,7 @@ class NestedRecordTest {
     Person original = new Person("Jane", 25, new Address("456 Oak Ave", "Boston", "02101"));
 
     Person updated =
-        PersonCompanion.with(
+        PersonBuilder.with(
             original,
             u -> u.name("Jane Smith").address(au -> au.street("789 Pine St").city("Chicago")));
 
@@ -48,7 +48,7 @@ class NestedRecordTest {
     Person personWithNullAddress = new Person("Bob", 35, null);
 
     Person updated =
-        PersonCompanion.with(
+        PersonBuilder.with(
             personWithNullAddress,
             u -> u.address(au -> au.street("999 New St").city("Seattle").zipCode("98101")));
 
@@ -68,7 +68,7 @@ class NestedRecordTest {
 
     // First, set a completely new address using direct assignment
     Address newAddress = new Address("222 Second St", "Denver", "80201");
-    Person withNewAddress = PersonCompanion.with(original, updater -> updater.address(newAddress));
+    Person withNewAddress = PersonBuilder.with(original, updater -> updater.address(newAddress));
 
     assertEquals("222 Second St", withNewAddress.address().street());
     assertEquals("Denver", withNewAddress.address().city());
@@ -76,7 +76,7 @@ class NestedRecordTest {
 
     // Then, use fluent update on the new address with chaining
     Person finalUpdate =
-        PersonCompanion.with(withNewAddress, u -> u.address(au -> au.zipCode("80202")));
+        PersonBuilder.with(withNewAddress, u -> u.address(au -> au.zipCode("80202")));
 
     assertEquals("222 Second St", finalUpdate.address().street()); // unchanged
     assertEquals("Denver", finalUpdate.address().city()); // unchanged
