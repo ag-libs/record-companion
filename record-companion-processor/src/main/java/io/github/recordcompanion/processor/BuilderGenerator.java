@@ -11,10 +11,10 @@ import com.squareup.javapoet.TypeSpec;
 import com.squareup.javapoet.TypeVariableName;
 import io.github.recordcompanion.annotations.Builder;
 import java.io.IOException;
-import javax.annotation.processing.Generated;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.processing.Generated;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
@@ -130,7 +130,10 @@ public class BuilderGenerator {
             .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
             .addAnnotation(
                 AnnotationSpec.builder(Generated.class)
-                    .addMember("value", "$S", "io.github.recordcompanion.processor.RecordCompanionProcessor")
+                    .addMember(
+                        "value",
+                        "$S",
+                        "io.github.recordcompanion.processor.RecordCompanionProcessor")
                     .build())
             .addJavadoc(
                 "Generated companion class for {@link $T} record with builder pattern support.\n",
@@ -143,6 +146,13 @@ public class BuilderGenerator {
                 generateBuilderWithExistingMethod(
                     recordTypeName, companionClass, components, typeVariableNames))
             .addMethod(generateWithMethod(recordTypeName, companionClass, typeVariableNames));
+
+    // Add validation method if any components have validation annotations
+    if (hasValidationAnnotation(components)) {
+      companionBuilder
+          .addType(generateSimpleConstraintViolation())
+          .addMethod(generateValidateMethod(components, typeVariableNames));
+    }
 
     TypeSpec companion = companionBuilder.build();
 
@@ -168,7 +178,10 @@ public class BuilderGenerator {
             .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
             .addAnnotation(
                 AnnotationSpec.builder(Generated.class)
-                    .addMember("value", "$S", "io.github.recordcompanion.processor.RecordCompanionProcessor")
+                    .addMember(
+                        "value",
+                        "$S",
+                        "io.github.recordcompanion.processor.RecordCompanionProcessor")
                     .build())
             .addJavadoc("Interface for updating record values without exposing build method.\n");
 
@@ -246,7 +259,10 @@ public class BuilderGenerator {
             .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
             .addAnnotation(
                 AnnotationSpec.builder(Generated.class)
-                    .addMember("value", "$S", "io.github.recordcompanion.processor.RecordCompanionProcessor")
+                    .addMember(
+                        "value",
+                        "$S",
+                        "io.github.recordcompanion.processor.RecordCompanionProcessor")
                     .build())
             .addSuperinterface(updaterInterfaceType);
 
@@ -521,5 +537,278 @@ public class BuilderGenerator {
 
     // Convert first character to lowercase and append "Updater"
     return Character.toLowerCase(className.charAt(0)) + className.substring(1) + "Updater";
+  }
+
+  /** Checks if any record components have validation annotations. */
+  private boolean hasValidationAnnotation(List<? extends RecordComponentElement> components) {
+    return components.stream().anyMatch(this::hasValidationAnnotation);
+  }
+
+  /** Checks if a record component has validation annotations. */
+  private boolean hasValidationAnnotation(RecordComponentElement component) {
+    return hasNotNullAnnotation(component) || hasMinAnnotation(component);
+  }
+
+  /** Checks if a record component has @NotNull annotation. */
+  private boolean hasNotNullAnnotation(RecordComponentElement component) {
+    return hasAnnotation(component, "jakarta.validation.constraints.NotNull");
+  }
+
+  /** Checks if a record component has @Min annotation. */
+  private boolean hasMinAnnotation(RecordComponentElement component) {
+    return hasAnnotation(component, "jakarta.validation.constraints.Min");
+  }
+
+  /** Checks if a record component has a specific annotation. */
+  private boolean hasAnnotation(RecordComponentElement component, String annotationName) {
+    // Check annotations on the accessor method (getter) since component annotations
+    // appear on the accessor method during annotation processing
+    javax.lang.model.element.ExecutableElement accessor = component.getAccessor();
+    if (accessor != null) {
+      boolean hasAnnotationOnAccessor =
+          accessor.getAnnotationMirrors().stream()
+              .anyMatch(
+                  annotation -> {
+                    String name = annotation.getAnnotationType().toString();
+                    return annotationName.equals(name);
+                  });
+
+      if (hasAnnotationOnAccessor) {
+        return true;
+      }
+    }
+
+    // Also check for annotation on component itself (fallback)
+    return component.getAnnotationMirrors().stream()
+        .anyMatch(
+            annotation -> {
+              String name = annotation.getAnnotationType().toString();
+              return annotationName.equals(name);
+            });
+  }
+
+  /** Gets the minimum value from @Min annotation. */
+  private long getMinValue(RecordComponentElement component) {
+    // Check annotations on the accessor method first
+    javax.lang.model.element.ExecutableElement accessor = component.getAccessor();
+    if (accessor != null) {
+      for (javax.lang.model.element.AnnotationMirror annotation : accessor.getAnnotationMirrors()) {
+        if ("jakarta.validation.constraints.Min".equals(annotation.getAnnotationType().toString())) {
+          for (var entry : annotation.getElementValues().entrySet()) {
+            if ("value".equals(entry.getKey().getSimpleName().toString())) {
+              return (Long) entry.getValue().getValue();
+            }
+          }
+        }
+      }
+    }
+
+    // Check component annotations as fallback
+    for (javax.lang.model.element.AnnotationMirror annotation : component.getAnnotationMirrors()) {
+      if ("jakarta.validation.constraints.Min".equals(annotation.getAnnotationType().toString())) {
+        for (var entry : annotation.getElementValues().entrySet()) {
+          if ("value".equals(entry.getKey().getSimpleName().toString())) {
+            return (Long) entry.getValue().getValue();
+          }
+        }
+      }
+    }
+    
+    return 0; // Default minimum value
+  }
+
+  /** Generates a static validate method for validation annotations. */
+  private MethodSpec generateValidateMethod(
+      List<? extends RecordComponentElement> components, List<TypeVariableName> typeVariableNames) {
+
+    MethodSpec.Builder methodBuilder =
+        MethodSpec.methodBuilder("validate")
+            .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+            .returns(TypeName.VOID)
+            .addJavadoc("Validates record field values for validation constraints.\n")
+            .addJavadoc(
+                "@throws jakarta.validation.ConstraintViolationException if validation fails\n");
+
+    // Add parameters only for components with validation annotations
+    for (RecordComponentElement component : components) {
+      if (hasValidationAnnotation(component)) {
+        methodBuilder.addParameter(
+            TypeName.get(component.asType()), component.getSimpleName().toString());
+      }
+    }
+
+    // Add type parameters if needed
+    for (TypeVariableName typeVariableName : typeVariableNames) {
+      methodBuilder.addTypeVariable(typeVariableName);
+    }
+
+    // Generate method body with @NotNull checks
+    CodeBlock.Builder body = CodeBlock.builder();
+
+    body.addStatement(
+        "$T<$T<Object>> violations = new $T<>()",
+        java.util.Set.class,
+        ClassName.get("jakarta.validation", "ConstraintViolation"),
+        java.util.HashSet.class);
+
+    for (RecordComponentElement component : components) {
+      if (hasValidationAnnotation(component)) {
+        String fieldName = component.getSimpleName().toString();
+        
+        // @NotNull validation
+        if (hasNotNullAnnotation(component)) {
+          body.beginControlFlow("if ($N == null)", fieldName)
+              .addStatement(
+                  "violations.add(new SimpleConstraintViolation($S, $S, $N))",
+                  fieldName,
+                  fieldName + " cannot be null",
+                  fieldName)
+              .endControlFlow();
+        }
+        
+        // @Min validation
+        if (hasMinAnnotation(component)) {
+          // Get the minimum value from the annotation
+          long minValue = getMinValue(component);
+          TypeName componentType = TypeName.get(component.asType());
+          
+          // Handle different numeric types
+          if (componentType.equals(TypeName.INT) || componentType.equals(TypeName.get(Integer.class))) {
+            body.beginControlFlow("if ($N != null && $N < $L)", fieldName, fieldName, minValue)
+                .addStatement(
+                    "violations.add(new SimpleConstraintViolation($S, $S, $N))",
+                    fieldName,
+                    fieldName + " must be at least " + minValue,
+                    fieldName)
+                .endControlFlow();
+          } else if (componentType.equals(TypeName.LONG) || componentType.equals(TypeName.get(Long.class))) {
+            body.beginControlFlow("if ($N != null && $N < $LL)", fieldName, fieldName, minValue)
+                .addStatement(
+                    "violations.add(new SimpleConstraintViolation($S, $S, $N))",
+                    fieldName,
+                    fieldName + " must be at least " + minValue,
+                    fieldName)
+                .endControlFlow();
+          }
+        }
+      }
+    }
+
+    body.beginControlFlow("if (!violations.isEmpty())")
+        .addStatement(
+            "throw new $T(violations)",
+            ClassName.get("jakarta.validation", "ConstraintViolationException"))
+        .endControlFlow();
+
+    methodBuilder.addCode(body.build());
+    return methodBuilder.build();
+  }
+
+  /** Generates a simple ConstraintViolation implementation. */
+  private TypeSpec generateSimpleConstraintViolation() {
+    ClassName constraintViolationType = ClassName.get("jakarta.validation", "ConstraintViolation");
+    ParameterizedTypeName constraintViolationOfObject =
+        ParameterizedTypeName.get(constraintViolationType, TypeName.OBJECT);
+
+    return TypeSpec.classBuilder("SimpleConstraintViolation")
+        .addModifiers(Modifier.PRIVATE, Modifier.STATIC)
+        .addSuperinterface(constraintViolationOfObject)
+        .addField(String.class, "propertyPath", Modifier.PRIVATE, Modifier.FINAL)
+        .addField(String.class, "message", Modifier.PRIVATE, Modifier.FINAL)
+        .addField(Object.class, "invalidValue", Modifier.PRIVATE, Modifier.FINAL)
+        .addMethod(
+            MethodSpec.constructorBuilder()
+                .addModifiers(Modifier.PUBLIC)
+                .addParameter(String.class, "propertyPath")
+                .addParameter(String.class, "message")
+                .addParameter(Object.class, "invalidValue")
+                .addStatement("this.propertyPath = propertyPath")
+                .addStatement("this.message = message")
+                .addStatement("this.invalidValue = invalidValue")
+                .build())
+        .addMethod(
+            MethodSpec.methodBuilder("getMessage")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
+                .returns(String.class)
+                .addStatement("return message")
+                .build())
+        .addMethod(
+            MethodSpec.methodBuilder("getMessageTemplate")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
+                .returns(String.class)
+                .addStatement("return message")
+                .build())
+        .addMethod(
+            MethodSpec.methodBuilder("getInvalidValue")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
+                .returns(Object.class)
+                .addStatement("return invalidValue")
+                .build())
+        .addMethod(
+            MethodSpec.methodBuilder("getPropertyPath")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
+                .returns(ClassName.get("jakarta.validation", "Path"))
+                .addStatement("return null")
+                .build())
+        .addMethod(
+            MethodSpec.methodBuilder("getRootBean")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
+                .returns(Object.class)
+                .addStatement("return null")
+                .build())
+        .addMethod(
+            MethodSpec.methodBuilder("getRootBeanClass")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
+                .returns(ParameterizedTypeName.get(ClassName.get(Class.class), TypeName.OBJECT))
+                .addStatement("return null")
+                .build())
+        .addMethod(
+            MethodSpec.methodBuilder("getLeafBean")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
+                .returns(Object.class)
+                .addStatement("return null")
+                .build())
+        .addMethod(
+            MethodSpec.methodBuilder("getExecutableParameters")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
+                .returns(TypeName.get(Object[].class))
+                .addStatement("return null")
+                .build())
+        .addMethod(
+            MethodSpec.methodBuilder("getExecutableReturnValue")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
+                .returns(Object.class)
+                .addStatement("return null")
+                .build())
+        .addMethod(
+            MethodSpec.methodBuilder("getConstraintDescriptor")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
+                .returns(ClassName.get("jakarta.validation.metadata", "ConstraintDescriptor"))
+                .addStatement("return null")
+                .build())
+        .addMethod(
+            MethodSpec.methodBuilder("unwrap")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
+                .addTypeVariable(TypeVariableName.get("U"))
+                .addParameter(
+                    ParameterizedTypeName.get(
+                        ClassName.get(Class.class), TypeVariableName.get("U")),
+                    "type")
+                .returns(TypeVariableName.get("U"))
+                .addStatement(
+                    "throw new $T($S)", UnsupportedOperationException.class, "Not supported")
+                .build())
+        .build();
   }
 }
