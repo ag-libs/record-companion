@@ -2,12 +2,16 @@ package io.github.recordcompanion.tests;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import io.github.recordcompanion.tests.records.BoundedGeneric;
+import io.github.recordcompanion.tests.records.BoundedGenericCompanion;
 import io.github.recordcompanion.tests.records.Container;
 import io.github.recordcompanion.tests.records.ContainerCompanion;
 import io.github.recordcompanion.tests.records.NestedGeneric;
 import io.github.recordcompanion.tests.records.NestedGenericCompanion;
 import io.github.recordcompanion.tests.records.Pair;
 import io.github.recordcompanion.tests.records.PairCompanion;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class GenericRecordTest {
@@ -101,5 +105,41 @@ class GenericRecordTest {
     assertNotNull(updated.container());
     assertEquals("New Container", updated.container().name());
     assertEquals(123L, updated.container().value());
+  }
+
+  @Test
+  void testBoundedGenericsBuilder() {
+    List<String> items = Arrays.asList("item1", "item2");
+
+    BoundedGeneric<Integer, List<String>> bounded =
+        BoundedGenericCompanion.<Integer, List<String>>builder()
+            .name("Test")
+            .value(42)
+            .items(items)
+            .build();
+
+    assertEquals("Test", bounded.name());
+    assertEquals(42, bounded.value());
+    assertEquals(items, bounded.items());
+  }
+
+  @Test
+  void testBoundedGenericsWithMethod() {
+    List<String> originalItems = Arrays.asList("old1", "old2");
+    List<String> newItems = Arrays.asList("new1", "new2");
+
+    BoundedGeneric<Double, List<String>> original =
+        BoundedGenericCompanion.<Double, List<String>>builder()
+            .name("Original")
+            .value(3.14)
+            .items(originalItems)
+            .build();
+
+    BoundedGeneric<Double, List<String>> updated =
+        BoundedGenericCompanion.with(original, u -> u.name("Updated").value(2.71).items(newItems));
+
+    assertEquals("Updated", updated.name());
+    assertEquals(2.71, updated.value());
+    assertEquals(newItems, updated.items());
   }
 }
