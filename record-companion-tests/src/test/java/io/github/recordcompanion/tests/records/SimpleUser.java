@@ -11,9 +11,9 @@ public record SimpleUser(String name, int age, List<String> aliases) {
 
   public SimpleUser {
     SimpleUserValidator.validator()
-        .age(age, ValueValidator::notNull)
-        .name(name, StringValidator::notEmpty)
-        .aliases(aliases, CollectionValidator::isNull)
+        .checkAge(age, ValueValidator::notNull)
+        .checkName(name, StringValidator::notEmpty)
+        .checkAliases(aliases, CollectionValidator::isNull)
         .validate();
   }
 }

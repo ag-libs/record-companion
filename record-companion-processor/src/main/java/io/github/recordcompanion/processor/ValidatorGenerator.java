@@ -153,7 +153,7 @@ public class ValidatorGenerator {
                 ClassName.get(packageName, validatorClassName),
                 typeVariables.toArray(new TypeName[0]));
 
-    return MethodSpec.methodBuilder(componentName)
+    return MethodSpec.methodBuilder("check" + capitalize(componentName))
         .addModifiers(Modifier.PUBLIC)
         .addParameter(componentTypeName, componentName)
         .addParameter(consumerType, "validator")

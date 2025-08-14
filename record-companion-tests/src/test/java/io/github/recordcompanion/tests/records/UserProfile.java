@@ -10,9 +10,9 @@ import java.util.Map;
 public record UserProfile(String username, int score, Map<String, String> metadata) {
   public UserProfile {
     validator()
-        .username(username, stringValidator -> stringValidator.notNull().lengthBetween(3, 20))
-        .score(score, numericValidator -> numericValidator.isPositive().max(100))
-        .metadata(metadata, mapValidator -> mapValidator.notNull().notEmpty())
+        .checkUsername(username, stringValidator -> stringValidator.notNull().lengthBetween(3, 20))
+        .checkScore(score, numericValidator -> numericValidator.isPositive().max(100))
+        .checkMetadata(metadata, mapValidator -> mapValidator.notNull().notEmpty())
         .validate();
 
     checkUsername(username).notNull();
