@@ -94,7 +94,9 @@ public class ValidatorGenerator {
             .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
             .addTypeVariables(typeVariables)
             .returns(returnType)
-            .addStatement("return new $T()", ClassName.get(packageName, className))
+            .addStatement(
+                "return new $T" + (typeVariables.isEmpty() ? "()" : "<>()"),
+                ClassName.get(packageName, className))
             .build();
     validatorClass.addMethod(validatorMethod);
 
@@ -188,8 +190,7 @@ public class ValidatorGenerator {
     if (typeName instanceof TypeVariableName) {
       return true;
     }
-    if (typeName instanceof ParameterizedTypeName) {
-      ParameterizedTypeName parameterizedType = (ParameterizedTypeName) typeName;
+    if (typeName instanceof ParameterizedTypeName parameterizedType) {
       return parameterizedType.typeArguments.stream().anyMatch(this::containsTypeVariable);
     }
     return false;
@@ -302,29 +303,5 @@ public class ValidatorGenerator {
         || typeName.equals("java.util.LinkedHashMap")
         || typeName.equals("java.util.TreeMap")
         || typeName.equals("java.util.ConcurrentHashMap");
-  }
-
-  private TypeName getCollectionElementType(TypeMirror typeMirror) {
-    String typeName = typeMirror.toString();
-
-    // Extract generic type from collection types like List<String>
-    int startIndex = typeName.indexOf('<');
-    int endIndex = typeName.lastIndexOf('>');
-
-    if (startIndex != -1 && endIndex != -1 && startIndex < endIndex) {
-      String elementTypeName = typeName.substring(startIndex + 1, endIndex);
-      // Handle simple cases - for complex generics, this would need more sophisticated parsing
-      return switch (elementTypeName) {
-        case "java.lang.String" -> ClassName.get(String.class);
-        case "java.lang.Integer" -> ClassName.get(Integer.class);
-        case "java.lang.Long" -> ClassName.get(Long.class);
-        case "java.lang.Double" -> ClassName.get(Double.class);
-        case "java.lang.Boolean" -> ClassName.get(Boolean.class);
-        default -> ClassName.get(Object.class); // Fallback for complex types
-      };
-    }
-
-    // If no generic type found, use Object as wildcard
-    return ClassName.get(Object.class);
   }
 }
