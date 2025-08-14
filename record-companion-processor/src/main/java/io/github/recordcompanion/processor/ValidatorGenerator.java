@@ -103,6 +103,12 @@ public class ValidatorGenerator {
       MethodSpec validationMethod =
           createValidationMethod(component, className, packageName, typeVariables);
       validatorClass.addMethod(validationMethod);
+
+      // Add static field-specific validation method (skip for generic types)
+      MethodSpec staticValidationMethod = createStaticValidationMethod(component);
+      if (staticValidationMethod != null) {
+        validatorClass.addMethod(staticValidationMethod);
+      }
     }
 
     // Add context() method
@@ -155,6 +161,45 @@ public class ValidatorGenerator {
         .addStatement("validator.accept(validation.check($L, $S))", componentName, componentName)
         .addStatement("return this")
         .build();
+  }
+
+  private MethodSpec createStaticValidationMethod(RecordComponentElement component) {
+    String componentName = component.getSimpleName().toString();
+    TypeMirror componentType = component.asType();
+    TypeName componentTypeName = TypeName.get(componentType);
+
+    // Skip static methods for generic types to avoid "non-static type variable T cannot be
+    // referenced from a static context"
+    if (containsTypeVariable(componentTypeName)) {
+      return null; // Will be filtered out
+    }
+
+    TypeName validatorType = getValidatorType(componentType);
+
+    return MethodSpec.methodBuilder("check" + capitalize(componentName))
+        .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+        .addParameter(componentTypeName, componentName)
+        .returns(validatorType)
+        .addStatement("return $T.check($L)", VALIDCHECK_CHECK, componentName)
+        .build();
+  }
+
+  private boolean containsTypeVariable(TypeName typeName) {
+    if (typeName instanceof TypeVariableName) {
+      return true;
+    }
+    if (typeName instanceof ParameterizedTypeName) {
+      ParameterizedTypeName parameterizedType = (ParameterizedTypeName) typeName;
+      return parameterizedType.typeArguments.stream().anyMatch(this::containsTypeVariable);
+    }
+    return false;
+  }
+
+  private String capitalize(String str) {
+    if (str == null || str.isEmpty()) {
+      return str;
+    }
+    return str.substring(0, 1).toUpperCase() + str.substring(1);
   }
 
   private TypeName getValidatorType(TypeMirror componentType) {
