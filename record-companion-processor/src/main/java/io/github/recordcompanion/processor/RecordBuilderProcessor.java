@@ -24,11 +24,16 @@ import javax.tools.Diagnostic;
 public class RecordBuilderProcessor extends AbstractProcessor {
 
   private BuilderGenerator builderGenerator;
+  private ValidatorGenerator validatorGenerator;
 
   @Override
   public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
     if (builderGenerator == null) {
       builderGenerator = new BuilderGenerator(processingEnv);
+    }
+
+    if (validatorGenerator == null && isValidCheckAvailable()) {
+      validatorGenerator = new ValidatorGenerator(processingEnv);
     }
 
     for (Element element : roundEnv.getElementsAnnotatedWith(Builder.class)) {
@@ -46,6 +51,10 @@ public class RecordBuilderProcessor extends AbstractProcessor {
 
       try {
         builderGenerator.generateBuilderAndUpdaterTypes(recordElement);
+
+        if (validatorGenerator != null) {
+          validatorGenerator.generateValidator(recordElement);
+        }
       } catch (IOException e) {
         processingEnv
             .getMessager()
@@ -60,5 +69,10 @@ public class RecordBuilderProcessor extends AbstractProcessor {
     }
 
     return true;
+  }
+
+  private boolean isValidCheckAvailable() {
+    // Use Elements API to check if ValidCheck is available at compile time
+    return processingEnv.getElementUtils().getTypeElement("io.github.validcheck.Check") != null;
   }
 }
