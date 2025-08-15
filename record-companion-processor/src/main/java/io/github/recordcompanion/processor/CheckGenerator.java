@@ -20,12 +20,12 @@ import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 
-/** Generates validator classes for ValidCheck integration. */
-public class ValidatorGenerator {
+/** Generates check classes for ValidCheck integration. */
+public class CheckGenerator {
 
   private static final String GENERATOR_VALUE =
       "io.github.recordcompanion.processor.RecordBuilderProcessor";
-  private static final String VALIDATOR_SUFFIX = "Validator";
+  private static final String CHECK_SUFFIX = "Check";
 
   private static final ClassName VALIDCHECK_CHECK = ClassName.get("io.github.validcheck", "Check");
   private static final ClassName VALIDCHECK_BATCH_CONTEXT =
@@ -44,12 +44,12 @@ public class ValidatorGenerator {
 
   private final ProcessingEnvironment processingEnv;
 
-  public ValidatorGenerator(ProcessingEnvironment processingEnv) {
+  public CheckGenerator(ProcessingEnvironment processingEnv) {
     this.processingEnv = Objects.requireNonNull(processingEnv, "processingEnv cannot be null");
   }
 
-  public void generateValidator(TypeElement recordElement) throws IOException {
-    String className = recordElement.getSimpleName() + VALIDATOR_SUFFIX;
+  public void generateCheck(TypeElement recordElement) throws IOException {
+    String className = recordElement.getSimpleName() + CHECK_SUFFIX;
     String packageName = processingEnv.getElementUtils().getPackageOf(recordElement).toString();
 
     List<? extends RecordComponentElement> components = recordElement.getRecordComponents();
@@ -58,7 +58,7 @@ public class ValidatorGenerator {
             .map(TypeVariableName::get)
             .collect(Collectors.toList());
 
-    TypeSpec.Builder validatorClass =
+    TypeSpec.Builder checkClass =
         TypeSpec.classBuilder(className)
             .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
             .addTypeVariables(typeVariables)
@@ -72,7 +72,7 @@ public class ValidatorGenerator {
         FieldSpec.builder(VALIDCHECK_BATCH_CONTEXT, "validation")
             .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
             .build();
-    validatorClass.addField(validationField);
+    checkClass.addField(validationField);
 
     // Add private constructor
     MethodSpec constructor =
@@ -80,7 +80,7 @@ public class ValidatorGenerator {
             .addModifiers(Modifier.PRIVATE)
             .addStatement("this.validation = $T.batch()", VALIDCHECK_CHECK)
             .build();
-    validatorClass.addMethod(constructor);
+    checkClass.addMethod(constructor);
 
     // Add static factory method
     TypeName returnType =
@@ -89,8 +89,8 @@ public class ValidatorGenerator {
             : ParameterizedTypeName.get(
                 ClassName.get(packageName, className), typeVariables.toArray(new TypeName[0]));
 
-    MethodSpec validatorMethod =
-        MethodSpec.methodBuilder("validator")
+    MethodSpec checkMethod =
+        MethodSpec.methodBuilder("check")
             .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
             .addTypeVariables(typeVariables)
             .returns(returnType)
@@ -98,18 +98,18 @@ public class ValidatorGenerator {
                 "return new $T" + (typeVariables.isEmpty() ? "()" : "<>()"),
                 ClassName.get(packageName, className))
             .build();
-    validatorClass.addMethod(validatorMethod);
+    checkClass.addMethod(checkMethod);
 
     // Add validation methods for each component
     for (RecordComponentElement component : components) {
       MethodSpec validationMethod =
           createValidationMethod(component, className, packageName, typeVariables);
-      validatorClass.addMethod(validationMethod);
+      checkClass.addMethod(validationMethod);
 
       // Add static field-specific validation method (skip for generic types)
       MethodSpec staticValidationMethod = createStaticValidationMethod(component);
       if (staticValidationMethod != null) {
-        validatorClass.addMethod(staticValidationMethod);
+        checkClass.addMethod(staticValidationMethod);
       }
     }
 
@@ -120,7 +120,7 @@ public class ValidatorGenerator {
             .returns(VALIDCHECK_BATCH_CONTEXT)
             .addStatement("return validation")
             .build();
-    validatorClass.addMethod(contextMethod);
+    checkClass.addMethod(contextMethod);
 
     // Add validate() method
     MethodSpec validateMethod =
@@ -128,16 +128,16 @@ public class ValidatorGenerator {
             .addModifiers(Modifier.PUBLIC)
             .addStatement("validation.validate()")
             .build();
-    validatorClass.addMethod(validateMethod);
+    checkClass.addMethod(validateMethod);
 
-    JavaFile javaFile = JavaFile.builder(packageName, validatorClass.build()).indent("  ").build();
+    JavaFile javaFile = JavaFile.builder(packageName, checkClass.build()).indent("  ").build();
 
     javaFile.writeTo(processingEnv.getFiler());
   }
 
   private MethodSpec createValidationMethod(
       RecordComponentElement component,
-      String validatorClassName,
+      String checkClassName,
       String packageName,
       List<TypeVariableName> typeVariables) {
     String componentName = component.getSimpleName().toString();
@@ -150,9 +150,9 @@ public class ValidatorGenerator {
 
     TypeName returnType =
         typeVariables.isEmpty()
-            ? ClassName.get(packageName, validatorClassName)
+            ? ClassName.get(packageName, checkClassName)
             : ParameterizedTypeName.get(
-                ClassName.get(packageName, validatorClassName),
+                ClassName.get(packageName, checkClassName),
                 typeVariables.toArray(new TypeName[0]));
 
     return MethodSpec.methodBuilder("check" + capitalize(componentName))

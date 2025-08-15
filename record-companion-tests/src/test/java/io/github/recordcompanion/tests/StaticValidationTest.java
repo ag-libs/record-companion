@@ -1,6 +1,6 @@
 package io.github.recordcompanion.tests;
 
-import static io.github.recordcompanion.tests.records.UserProfileValidator.*;
+import static io.github.recordcompanion.tests.records.UserProfileCheck.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -8,7 +8,7 @@ import io.github.validcheck.ValidationException;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-/** Tests for static field-specific validation methods with check prefix. */
+/** Tests for static field-specific check methods with check prefix. */
 public class StaticValidationTest {
 
   @Test

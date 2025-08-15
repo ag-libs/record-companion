@@ -1,6 +1,7 @@
 package io.github.recordcompanion.processor;
 
 import io.github.recordcompanion.annotations.Builder;
+import io.github.recordcompanion.annotations.ValidCheck;
 import java.io.IOException;
 import java.util.Set;
 import javax.annotation.processing.AbstractProcessor;
@@ -19,12 +20,12 @@ import javax.tools.Diagnostic;
  * <p>Processes @Builder annotations on record classes and generates separate Builder classes and
  * Updater interfaces with builder pattern implementations.
  */
-@SupportedAnnotationTypes("io.github.recordcompanion.annotations.Builder")
+@SupportedAnnotationTypes({"io.github.recordcompanion.annotations.Builder", "io.github.recordcompanion.annotations.ValidCheck"})
 @SupportedSourceVersion(SourceVersion.RELEASE_17)
 public class RecordBuilderProcessor extends AbstractProcessor {
 
   private BuilderGenerator builderGenerator;
-  private ValidatorGenerator validatorGenerator;
+  private CheckGenerator checkGenerator;
 
   @Override
   public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
@@ -32,8 +33,8 @@ public class RecordBuilderProcessor extends AbstractProcessor {
       builderGenerator = new BuilderGenerator(processingEnv);
     }
 
-    if (validatorGenerator == null && isValidCheckAvailable()) {
-      validatorGenerator = new ValidatorGenerator(processingEnv);
+    if (checkGenerator == null && isValidCheckAvailable()) {
+      checkGenerator = new CheckGenerator(processingEnv);
     }
 
     for (Element element : roundEnv.getElementsAnnotatedWith(Builder.class)) {
@@ -52,8 +53,8 @@ public class RecordBuilderProcessor extends AbstractProcessor {
       try {
         builderGenerator.generateBuilderAndUpdaterTypes(recordElement);
 
-        if (validatorGenerator != null) {
-          validatorGenerator.generateValidator(recordElement);
+        if (checkGenerator != null && recordElement.getAnnotation(ValidCheck.class) != null) {
+          checkGenerator.generateCheck(recordElement);
         }
       } catch (IOException e) {
         processingEnv

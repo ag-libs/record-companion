@@ -25,18 +25,12 @@
   </properties>
 
   <modules>
-    <module>record-companion-annotations</module>
     <module>record-companion-processor</module>
     <module>record-companion-tests</module>
   </modules>
 
   <dependencyManagement>
     <dependencies>
-      <dependency>
-        <groupId>io.github.record-companion</groupId>
-        <artifactId>record-companion-annotations</artifactId>
-        <version>${project.version}</version>
-      </dependency>
       <dependency>
         <groupId>io.github.record-companion</groupId>
         <artifactId>record-companion-processor</artifactId>

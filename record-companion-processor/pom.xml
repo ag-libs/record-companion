@@ -17,12 +17,7 @@
     <name>RecordCompanion Processor</name>
     <description>Annotation processor for RecordCompanion library</description>
 
-    <dependencies>
-        <dependency>
-            <groupId>io.github.record-companion</groupId>
-            <artifactId>record-companion-annotations</artifactId>
-        </dependency>
-        
+    <dependencies>        
         <dependency>
             <groupId>com.squareup</groupId>
             <artifactId>javapoet</artifactId>

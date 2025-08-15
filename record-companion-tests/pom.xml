@@ -20,11 +20,6 @@
   <dependencies>
     <dependency>
       <groupId>io.github.record-companion</groupId>
-      <artifactId>record-companion-annotations</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.github.record-companion</groupId>
       <artifactId>record-companion-processor</artifactId>
       <scope>provided</scope>
     </dependency>
