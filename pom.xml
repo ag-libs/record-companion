@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0          http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>io.github.record-companion</groupId>
@@ -12,6 +9,11 @@
 
   <name>RecordCompanion</name>
   <description>Java Record Enhancement Library - Builder Pattern Support</description>
+
+  <modules>
+    <module>record-companion-processor</module>
+    <module>record-companion-tests</module>
+  </modules>
 
   <properties>
     <maven.compiler.source>17</maven.compiler.source>
@@ -23,11 +25,6 @@
     <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
     <maven.surefire.plugin.version>3.1.2</maven.surefire.plugin.version>
   </properties>
-
-  <modules>
-    <module>record-companion-processor</module>
-    <module>record-companion-tests</module>
-  </modules>
 
   <dependencyManagement>
     <dependencies>
@@ -67,14 +64,14 @@
             </compilerArgs>
           </configuration>
         </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>${maven.surefire.plugin.version}</version>
+        </plugin>
       </plugins>
     </pluginManagement>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>${maven.surefire.plugin.version}</version>
-      </plugin>
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
@@ -89,14 +86,18 @@
             </includes>
             <flexmark/>
           </markdown>
-          <pom/>
+          <pom>
+            <sortPom>
+              <!-- see https://github.com/diffplug/spotless/blob/main/plugin-maven/README.md#sortpom -->
+            </sortPom>
+          </pom>
         </configuration>
         <executions>
           <execution>
-            <phase>validate</phase>
             <goals>
               <goal>check</goal>
             </goals>
+            <phase>validate</phase>
           </execution>
         </executions>
       </plugin>
