@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.processing.Generated;
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.RecordComponentElement;
@@ -121,6 +122,10 @@ public class BuilderGenerator {
     String packageName =
         processingEnv.getElementUtils().getPackageOf(recordElement).getQualifiedName().toString();
 
+    // Extract copyAnnotations parameter from @Builder annotation
+    Builder builderAnnotation = recordElement.getAnnotation(Builder.class);
+    boolean copyAnnotations = builderAnnotation != null && builderAnnotation.copyAnnotations();
+
     // Extract type parameters from the record
     List<? extends TypeParameterElement> typeParameters = recordElement.getTypeParameters();
     List<TypeVariableName> typeVariableNames =
@@ -140,7 +145,13 @@ public class BuilderGenerator {
 
     // Generate the XxxBuilder class (implements XxxUpdater)
     generateStandaloneBuilderClass(
-        recordName, packageName, recordTypeName, components, typeVariableNames);
+        recordElement,
+        recordName,
+        packageName,
+        recordTypeName,
+        components,
+        typeVariableNames,
+        copyAnnotations);
   }
 
   /** Generates a standalone XxxUpdater interface file. */
@@ -184,11 +195,13 @@ public class BuilderGenerator {
 
   /** Generates a standalone XxxBuilder class file. */
   private void generateStandaloneBuilderClass(
+      TypeElement recordElement,
       String recordName,
       String packageName,
       TypeName recordTypeName,
       List<? extends RecordComponentElement> components,
-      List<TypeVariableName> typeVariableNames)
+      List<TypeVariableName> typeVariableNames,
+      boolean copyAnnotations)
       throws IOException {
 
     String builderName = recordName + BUILDER_SUFFIX;
@@ -214,6 +227,11 @@ public class BuilderGenerator {
             .addSuperinterface(updaterInterfaceType)
             .addJavadoc("Builder class for {@link $T} record.\n", recordTypeName);
 
+    // Copy annotations from record to builder class if copyAnnotations is true
+    if (copyAnnotations) {
+      addCopiedAnnotationsToBuilder(builderBuilder, recordElement);
+    }
+
     // Add type parameters to the builder class
     for (TypeVariableName typeVariableName : typeVariableNames) {
       builderBuilder.addTypeVariable(typeVariableName);
@@ -223,7 +241,7 @@ public class BuilderGenerator {
     addFieldsToBuilderClass(builderBuilder, components);
 
     // Add setter methods to builder class (returns builder type)
-    addSetterMethodsToBuilderClass(builderBuilder, components, builderClassType);
+    addSetterMethodsToBuilderClass(builderBuilder, components, builderClassType, copyAnnotations);
 
     // Add build method to builder class
     addBuildMethodToBuilderClass(builderBuilder, recordTypeName, components);
@@ -405,20 +423,27 @@ public class BuilderGenerator {
   private void addSetterMethodsToBuilderClass(
       TypeSpec.Builder builderBuilder,
       List<? extends RecordComponentElement> components,
-      TypeName builderClassType) {
+      TypeName builderClassType,
+      boolean copyAnnotations) {
     for (RecordComponentElement component : components) {
       String componentName = component.getSimpleName().toString();
       TypeMirror componentType = component.asType();
 
       // Always generate the original setter method
-      MethodSpec setterMethod =
+      MethodSpec.Builder setterMethodBuilder =
           MethodSpec.methodBuilder(componentName)
               .addModifiers(Modifier.PUBLIC)
               .addParameter(TypeName.get(componentType), componentName)
               .returns(builderClassType)
               .addStatement("this.$N = $N", componentName, componentName)
-              .addStatement("return this")
-              .build();
+              .addStatement("return this");
+
+      // Copy annotations from record component to setter method if copyAnnotations is true
+      if (copyAnnotations) {
+        addCopiedAnnotationsToMethod(setterMethodBuilder, component);
+      }
+
+      MethodSpec setterMethod = setterMethodBuilder.build();
 
       builderBuilder.addMethod(setterMethod);
 
@@ -532,5 +557,29 @@ public class BuilderGenerator {
 
     // Convert first character to lowercase and append "Updater"
     return Character.toLowerCase(className.charAt(0)) + className.substring(1) + "Updater";
+  }
+
+  /**
+   * Adds copied annotations from the record element to the builder class. Excludes @Builder
+   * annotation to avoid conflicts.
+   */
+  private void addCopiedAnnotationsToBuilder(
+      TypeSpec.Builder builderBuilder, TypeElement recordElement) {
+    for (AnnotationMirror annotation : recordElement.getAnnotationMirrors()) {
+      // Skip @Builder annotation to avoid conflicts
+      if (!annotation.getAnnotationType().toString().equals(Builder.class.getName())) {
+        AnnotationSpec annotationSpec = AnnotationSpec.get(annotation);
+        builderBuilder.addAnnotation(annotationSpec);
+      }
+    }
+  }
+
+  /** Adds copied annotations from the record component to the method. */
+  private void addCopiedAnnotationsToMethod(
+      MethodSpec.Builder methodBuilder, RecordComponentElement component) {
+    for (AnnotationMirror annotation : component.getAnnotationMirrors()) {
+      AnnotationSpec annotationSpec = AnnotationSpec.get(annotation);
+      methodBuilder.addAnnotation(annotationSpec);
+    }
   }
 }

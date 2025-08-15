@@ -32,4 +32,15 @@ import java.lang.annotation.Target;
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.SOURCE)
-public @interface Builder {}
+public @interface Builder {
+
+  /**
+   * Whether to copy annotations from the record and its components to the generated builder class.
+   *
+   * <p>When set to {@code true}, annotations present on the record class and its components will be
+   * copied to the corresponding generated builder class and its methods.
+   *
+   * @return {@code true} if annotations should be copied, {@code false} otherwise
+   */
+  boolean copyAnnotations() default false;
+}
