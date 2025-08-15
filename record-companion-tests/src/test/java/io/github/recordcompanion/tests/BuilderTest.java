@@ -73,4 +73,28 @@ class BuilderTest {
     assertEquals(25, user.age());
     assertEquals("chained@example.com", user.email());
   }
+
+  @Test
+  void testBuilderHandlesNullValues() {
+    // Should handle null gracefully without NPE
+    assertDoesNotThrow(
+        () -> UserBuilder.builder().name(null).age(25).email("test@example.com").build());
+
+    User userWithNullName =
+        UserBuilder.builder().name(null).age(25).email("test@example.com").build();
+    assertNull(userWithNullName.name());
+    assertEquals(25, userWithNullName.age());
+    assertEquals("test@example.com", userWithNullName.email());
+  }
+
+  @Test
+  void testBuilderFromExistingCopiesAllFields() {
+    User original = new User("John", 30, "john@example.com");
+    User copy = UserBuilder.builder(original).build();
+
+    assertEquals(original.name(), copy.name());
+    assertEquals(original.age(), copy.age());
+    assertEquals(original.email(), copy.email());
+    assertNotSame(original, copy); // Should be different instances
+  }
 }
