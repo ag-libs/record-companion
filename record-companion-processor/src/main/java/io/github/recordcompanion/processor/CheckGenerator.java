@@ -152,8 +152,7 @@ public class CheckGenerator {
         typeVariables.isEmpty()
             ? ClassName.get(packageName, checkClassName)
             : ParameterizedTypeName.get(
-                ClassName.get(packageName, checkClassName),
-                typeVariables.toArray(new TypeName[0]));
+                ClassName.get(packageName, checkClassName), typeVariables.toArray(new TypeName[0]));
 
     return MethodSpec.methodBuilder("check" + capitalize(componentName))
         .addModifiers(Modifier.PUBLIC)

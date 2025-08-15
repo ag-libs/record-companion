@@ -20,7 +20,10 @@ import javax.tools.Diagnostic;
  * <p>Processes @Builder annotations on record classes and generates separate Builder classes and
  * Updater interfaces with builder pattern implementations.
  */
-@SupportedAnnotationTypes({"io.github.recordcompanion.annotations.Builder", "io.github.recordcompanion.annotations.ValidCheck"})
+@SupportedAnnotationTypes({
+  "io.github.recordcompanion.annotations.Builder",
+  "io.github.recordcompanion.annotations.ValidCheck"
+})
 @SupportedSourceVersion(SourceVersion.RELEASE_17)
 public class RecordBuilderProcessor extends AbstractProcessor {
 
