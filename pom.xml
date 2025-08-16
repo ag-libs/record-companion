@@ -149,7 +149,7 @@
                 </goals>
                 <phase>verify</phase>
                 <configuration>
-                  <outputDirectory>${maven.multiModuleProjectDirectory}/target/site/jacoco</outputDirectory>
+                  <outputDirectory>${project.build.directory}/site/jacoco</outputDirectory>
                 </configuration>
               </execution>
             </executions>
