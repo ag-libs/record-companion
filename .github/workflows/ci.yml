@@ -41,7 +41,7 @@ jobs:
         run: mvn clean verify --batch-mode -Pcoverage
 
       - name: Sonar
-        run: mvn sonar:sonar -Dsonar.projectKey=record-companion -Dsonar.organization=record-companion
+        run: mvn sonar:sonar -Dsonar.projectKey=record-companion_record-companion -Dsonar.organization=record-companion
         if: ${{ matrix.java == '21' && matrix.os == 'ubuntu-latest' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
