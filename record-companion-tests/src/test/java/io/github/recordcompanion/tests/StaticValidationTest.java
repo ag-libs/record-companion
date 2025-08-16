@@ -65,7 +65,7 @@ public class StaticValidationTest {
     int score = 75;
 
     // Conditional validation using static methods
-    if (username.length() > 0) {
+    if (!username.isEmpty()) {
       assertDoesNotThrow(
           () -> {
             checkUsername(username).notNull().lengthBetween(3, 20);

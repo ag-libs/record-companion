@@ -12,7 +12,6 @@ import com.squareup.javapoet.TypeVariableName;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import javax.annotation.processing.Generated;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
@@ -24,20 +23,22 @@ import javax.lang.model.type.TypeMirror;
 public class CheckGenerator {
 
   private static final String CHECK_SUFFIX = "Check";
+  private static final String VALIDCHECK_PACKAGE = "io.github.validcheck";
+  private static final String CHECK_METHOD_PREFIX = "check";
 
-  private static final ClassName VALIDCHECK_CHECK = ClassName.get("io.github.validcheck", "Check");
+  private static final ClassName VALIDCHECK_CHECK = ClassName.get(VALIDCHECK_PACKAGE, CHECK_SUFFIX);
   private static final ClassName VALIDCHECK_BATCH_CONTEXT =
-      ClassName.get("io.github.validcheck", "BatchValidationContext");
+      ClassName.get(VALIDCHECK_PACKAGE, "BatchValidationContext");
   private static final ClassName VALIDCHECK_VALUE_VALIDATOR =
-      ClassName.get("io.github.validcheck", "ValueValidator");
+      ClassName.get(VALIDCHECK_PACKAGE, "ValueValidator");
   private static final ClassName VALIDCHECK_STRING_VALIDATOR =
-      ClassName.get("io.github.validcheck", "StringValidator");
+      ClassName.get(VALIDCHECK_PACKAGE, "StringValidator");
   private static final ClassName VALIDCHECK_NUMERIC_VALIDATOR =
-      ClassName.get("io.github.validcheck", "NumericValidator");
+      ClassName.get(VALIDCHECK_PACKAGE, "NumericValidator");
   private static final ClassName VALIDCHECK_COLLECTION_VALIDATOR =
-      ClassName.get("io.github.validcheck", "CollectionValidator");
+      ClassName.get(VALIDCHECK_PACKAGE, "CollectionValidator");
   private static final ClassName VALIDCHECK_MAP_VALIDATOR =
-      ClassName.get("io.github.validcheck", "MapValidator");
+      ClassName.get(VALIDCHECK_PACKAGE, "MapValidator");
   private static final ClassName CONSUMER_TYPE = ClassName.get("java.util.function", "Consumer");
 
   private final ProcessingEnvironment processingEnv;
@@ -52,9 +53,7 @@ public class CheckGenerator {
 
     List<? extends RecordComponentElement> components = recordElement.getRecordComponents();
     List<TypeVariableName> typeVariables =
-        recordElement.getTypeParameters().stream()
-            .map(TypeVariableName::get)
-            .collect(Collectors.toList());
+        recordElement.getTypeParameters().stream().map(TypeVariableName::get).toList();
 
     TypeSpec.Builder checkClass =
         TypeSpec.classBuilder(className)
@@ -88,7 +87,7 @@ public class CheckGenerator {
                 ClassName.get(packageName, className), typeVariables.toArray(new TypeName[0]));
 
     MethodSpec checkMethod =
-        MethodSpec.methodBuilder("check")
+        MethodSpec.methodBuilder(CHECK_METHOD_PREFIX)
             .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
             .addTypeVariables(typeVariables)
             .returns(returnType)
@@ -152,7 +151,7 @@ public class CheckGenerator {
             : ParameterizedTypeName.get(
                 ClassName.get(packageName, checkClassName), typeVariables.toArray(new TypeName[0]));
 
-    return MethodSpec.methodBuilder("check" + capitalize(componentName))
+    return MethodSpec.methodBuilder(CHECK_METHOD_PREFIX + capitalize(componentName))
         .addModifiers(Modifier.PUBLIC)
         .addParameter(componentTypeName, componentName)
         .addParameter(consumerType, "validator")
@@ -175,7 +174,7 @@ public class CheckGenerator {
 
     TypeName validatorType = getValidatorType(componentType);
 
-    return MethodSpec.methodBuilder("check" + capitalize(componentName))
+    return MethodSpec.methodBuilder(CHECK_METHOD_PREFIX + capitalize(componentName))
         .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
         .addParameter(componentTypeName, componentName)
         .returns(validatorType)

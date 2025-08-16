@@ -565,7 +565,7 @@ public class BuilderGenerator {
     }
 
     // Convert first character to lowercase and append "Updater"
-    return Character.toLowerCase(className.charAt(0)) + className.substring(1) + "Updater";
+    return Character.toLowerCase(className.charAt(0)) + className.substring(1) + UPDATER_SUFFIX;
   }
 
   /**

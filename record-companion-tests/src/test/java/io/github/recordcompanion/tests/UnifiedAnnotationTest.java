@@ -52,10 +52,11 @@ class UnifiedAnnotationTest {
 
     @Test
     void testBuilderFunctionality() {
-      AnnotatedRecord record = AnnotatedRecordBuilder.builder().name("Test Name").age(25).build();
+      AnnotatedRecord annotatedRecord =
+          AnnotatedRecordBuilder.builder().name("Test Name").age(25).build();
 
-      assertEquals("Test Name", record.name());
-      assertEquals(25, record.age());
+      assertEquals("Test Name", annotatedRecord.name());
+      assertEquals(25, annotatedRecord.age());
     }
   }
 
@@ -140,7 +141,7 @@ class UnifiedAnnotationTest {
       List<String> testList = Arrays.asList("item1", "item2");
       Map<String, Integer> testMap = Map.of("key1", 1, "key2", 2);
 
-      AdvancedAnnotatedRecord<String, Integer> record =
+      AdvancedAnnotatedRecord<String, Integer> advancedRecord =
           AdvancedAnnotatedRecordBuilder.<String, Integer>builder()
               .name("Advanced Test")
               .value("test-value")
@@ -148,10 +149,10 @@ class UnifiedAnnotationTest {
               .dataMap(testMap)
               .build();
 
-      assertEquals("Advanced Test", record.name());
-      assertEquals("test-value", record.value());
-      assertEquals(testList, record.stringList());
-      assertEquals(testMap, record.dataMap());
+      assertEquals("Advanced Test", advancedRecord.name());
+      assertEquals("test-value", advancedRecord.value());
+      assertEquals(testList, advancedRecord.stringList());
+      assertEquals(testMap, advancedRecord.dataMap());
     }
 
     @Test
