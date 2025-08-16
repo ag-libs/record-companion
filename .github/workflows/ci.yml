@@ -45,7 +45,8 @@ jobs:
           mvn sonar:sonar \
             --batch-mode \
             -Dsonar.projectKey=record-companion_record-companion \
-            -Dsonar.organization=record-companion
+            -Dsonar.organization=record-companion \
+            -Dsonar.coverage.jacoco.xmlReportPaths=../record-companion-tests/target/site/jacoco-aggregate/jacoco.xml,record-companion-tests/target/site/jacoco-aggregate/jacoco.xml
         if: ${{ matrix.java == '21' && matrix.os == 'ubuntu-latest' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
