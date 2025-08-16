@@ -7,7 +7,6 @@ import java.util.Set;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
-import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -24,12 +23,15 @@ import javax.tools.Diagnostic;
   "io.github.recordcompanion.annotations.Builder",
   "io.github.recordcompanion.annotations.ValidCheck"
 })
-@SupportedSourceVersion(SourceVersion.RELEASE_17)
 public class RecordCompanionProcessor extends AbstractProcessor {
-  static final String GENERATOR_VALUE = RecordCompanionProcessor.class.getName();
 
   private BuilderGenerator builderGenerator;
   private CheckGenerator checkGenerator;
+
+  @Override
+  public SourceVersion getSupportedSourceVersion() {
+    return SourceVersion.latestSupported();
+  }
 
   @Override
   public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {

@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.processing.Generated;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ElementKind;
@@ -171,10 +170,6 @@ public class BuilderGenerator {
     TypeSpec.Builder updaterBuilder =
         TypeSpec.interfaceBuilder(updaterName)
             .addModifiers(Modifier.PUBLIC)
-            .addAnnotation(
-                AnnotationSpec.builder(Generated.class)
-                    .addMember("value", "$S", RecordCompanionProcessor.GENERATOR_VALUE)
-                    .build())
             .addJavadoc("Interface for updating $N record values.\n", recordName);
 
     // Add type parameters to the interface
@@ -224,10 +219,6 @@ public class BuilderGenerator {
     TypeSpec.Builder builderBuilder =
         TypeSpec.classBuilder(builderName)
             .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-            .addAnnotation(
-                AnnotationSpec.builder(Generated.class)
-                    .addMember("value", "$S", RecordCompanionProcessor.GENERATOR_VALUE)
-                    .build())
             .addSuperinterface(updaterInterfaceType)
             .addJavadoc("Builder class for {@link $T} record.\n", recordTypeName);
 
