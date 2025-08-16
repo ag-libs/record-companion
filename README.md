@@ -24,7 +24,7 @@ validation capabilities through compile-time code generation.
 <dependency>
   <groupId>io.github.record-companion</groupId>
   <artifactId>record-companion-processor</artifactId>
-  <version>1.0.0</version>
+  <version>0.0.3</version>
   <scope>provided</scope>
 </dependency>
 ```
@@ -32,8 +32,8 @@ validation capabilities through compile-time code generation.
 **Gradle:**
 
 ```gradle
-annotationProcessor 'io.github.record-companion:record-companion-processor:1.0.0'
-compileOnly 'io.github.record-companion:record-companion-processor:1.0.0'
+annotationProcessor 'io.github.record-companion:record-companion-processor:0.0.3'
+compileOnly 'io.github.record-companion:record-companion-processor:0.0.3'
 ```
 
 ### 2. Annotate Your Records
