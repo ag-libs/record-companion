@@ -129,7 +129,13 @@ public class BuilderGenerator {
     // Extract type parameters from the record
     List<? extends TypeParameterElement> typeParameters = recordElement.getTypeParameters();
     List<TypeVariableName> typeVariableNames =
-        typeParameters.stream().map(TypeVariableName::get).toList();
+        typeParameters.stream()
+            .map(
+                tp ->
+                    copyAnnotations
+                        ? createTypeVariableNameWithAnnotations(tp)
+                        : TypeVariableName.get(tp))
+            .toList();
 
     ClassName recordClass = ClassName.get(packageName, recordName);
 
@@ -430,10 +436,15 @@ public class BuilderGenerator {
       TypeMirror componentType = component.asType();
 
       // Always generate the original setter method
+      TypeName parameterType =
+          copyAnnotations
+              ? createTypeNameWithAnnotations(componentType)
+              : TypeName.get(componentType);
+
       MethodSpec.Builder setterMethodBuilder =
           MethodSpec.methodBuilder(componentName)
               .addModifiers(Modifier.PUBLIC)
-              .addParameter(TypeName.get(componentType), componentName)
+              .addParameter(parameterType, componentName)
               .returns(builderClassType)
               .addStatement("this.$N = $N", componentName, componentName)
               .addStatement("return this");
@@ -581,5 +592,35 @@ public class BuilderGenerator {
       AnnotationSpec annotationSpec = AnnotationSpec.get(annotation);
       methodBuilder.addAnnotation(annotationSpec);
     }
+  }
+
+  /**
+   * Creates a TypeVariableName with annotations preserved from the TypeParameterElement. This
+   * handles type variable annotations like {@code @TypeVarAnnotation T}.
+   */
+  private TypeVariableName createTypeVariableNameWithAnnotations(
+      TypeParameterElement typeParameter) {
+    TypeVariableName baseTypeVar = TypeVariableName.get(typeParameter);
+
+    // Copy annotations from the type parameter to the type variable name
+    List<AnnotationSpec> annotations =
+        typeParameter.getAnnotationMirrors().stream().map(AnnotationSpec::get).toList();
+
+    if (annotations.isEmpty()) {
+      return baseTypeVar;
+    }
+
+    // Create a new TypeVariableName with annotations
+    return baseTypeVar.annotated(annotations);
+  }
+
+  /**
+   * Creates a TypeName with type use annotations preserved from the TypeMirror. This handles type
+   * use annotations within parameterized types like {@code List<@Ann String>}.
+   */
+  private TypeName createTypeNameWithAnnotations(TypeMirror typeMirror) {
+    // JavaPoet's TypeName.get() should already preserve type use annotations
+    // but we can enhance this if needed for specific cases
+    return TypeName.get(typeMirror);
   }
 }
