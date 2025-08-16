@@ -88,6 +88,7 @@
             <releaseProfiles>release</releaseProfiles>
             <goals>deploy</goals>
             <tagNameFormat>v@{project.version}</tagNameFormat>
+            <arguments>-Dspotless.check.skip=true</arguments>
           </configuration>
         </plugin>
         <plugin>
@@ -227,18 +228,6 @@
               <autoPublish>true</autoPublish>
               <waitUntil>published</waitUntil>
             </configuration>
-          </plugin>
-          <plugin>
-            <groupId>com.diffplug.spotless</groupId>
-            <artifactId>spotless-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>check</goal>
-                </goals>
-                <phase>none</phase>
-              </execution>
-            </executions>
           </plugin>
         </plugins>
       </build>

@@ -57,7 +57,7 @@ jobs:
             MVN_CMD="$MVN_CMD -DdevelopmentVersion=${{ github.event.inputs.development-version }}"
           fi
           
-          MVN_CMD="$MVN_CMD --batch-mode --no-transfer-progress -Dspotless.check.skip=true"
+          MVN_CMD="$MVN_CMD --batch-mode --no-transfer-progress"
           
           echo "Executing: $MVN_CMD"
           eval $MVN_CMD
