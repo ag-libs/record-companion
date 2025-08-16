@@ -41,7 +41,7 @@ jobs:
         run: mvn clean verify --batch-mode -Pcoverage
 
       - name: Sonar
-        run: |
+        run: >
           mvn sonar:sonar 
             --batch-mode 
             -Dsonar.projectKey=record-companion_record-companion 
