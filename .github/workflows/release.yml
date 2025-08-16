@@ -1,0 +1,107 @@
+name: Release to Maven Central
+
+on:
+  workflow_dispatch:
+    inputs:
+      release-version:
+        description: 'Release version (leave empty for automatic)'
+        required: false
+        type: string
+      development-version:
+        description: 'Next development version (leave empty for automatic)'
+        required: false
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.RELEASE_TOKEN }}
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+          server-id: central
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          # Configure git to use token authentication
+          git config --global credential.helper store
+          echo "https://x-access-token:${{ secrets.RELEASE_TOKEN }}@github.com" > ~/.git-credentials
+
+      - name: Prepare release
+        run: |
+          # Build Maven command with optional version parameters
+          MVN_CMD="mvn release:prepare"
+          
+          if [ -n "${{ github.event.inputs.release-version }}" ]; then
+            MVN_CMD="$MVN_CMD -DreleaseVersion=${{ github.event.inputs.release-version }}"
+            MVN_CMD="$MVN_CMD -Dtag=v${{ github.event.inputs.release-version }}"
+          fi
+          
+          if [ -n "${{ github.event.inputs.development-version }}" ]; then
+            MVN_CMD="$MVN_CMD -DdevelopmentVersion=${{ github.event.inputs.development-version }}"
+          fi
+          
+          MVN_CMD="$MVN_CMD --batch-mode --no-transfer-progress"
+          
+          echo "Executing: $MVN_CMD"
+          eval $MVN_CMD
+        env:
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Perform release
+        run: |
+          mvn release:perform \
+            -Prelease \
+            --batch-mode \
+            --no-transfer-progress
+        env:
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Create GitHub Release from Tag
+        run: |
+          # Get the latest tag (created by maven-release-plugin)
+          LATEST_TAG=$(git describe --tags --abbrev=0)
+          gh release create $LATEST_TAG \
+            --title "Release $LATEST_TAG" \
+            --generate-notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+
+      - name: Update README with new version
+        run: |
+          # Get the latest tag and extract version (remove 'v' prefix)
+          LATEST_TAG=$(git describe --tags --abbrev=0)
+          VERSION=${LATEST_TAG#v}
+
+          # Update README.md version references
+          sed -i "s/<version>.*<\/version>/<version>$VERSION<\/version>/g" README.md
+          sed -i "s/record-companion-processor:[0-9]\+\.[0-9]\+\.[0-9]\+/record-companion-processor:$VERSION/g" README.md
+
+          # Commit and push the README update
+          git add README.md
+          git commit -m "docs: update README.md with version $VERSION [skip ci]" || echo "No changes to commit"
+          git push origin main
+
+      - name: Announce release
+        run: |
+          LATEST_TAG=$(git describe --tags --abbrev=0)
+          echo "🎉 Successfully released Record Companion $LATEST_TAG to Maven Central!"
+          echo "📦 Available at: https://central.sonatype.com/artifact/io.github.record-companion/record-companion-processor"
