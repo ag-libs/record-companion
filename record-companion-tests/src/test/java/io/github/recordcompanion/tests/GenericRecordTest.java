@@ -146,16 +146,16 @@ class GenericRecordTest {
   @Test
   void testBoundedGenericBuilder() {
     // Test with wildcards and bounded types
-    BoundedGeneric<Integer, List<String>> record =
+    BoundedGeneric<Integer, List<String>> boundedGeneric =
         BoundedGenericBuilder.<Integer, List<String>>builder()
             .name("Test Bounded")
             .value(42)
             .items(Arrays.asList("item1", "item2"))
             .build();
 
-    assertEquals("Test Bounded", record.name());
-    assertEquals(42, record.value());
-    assertEquals(Arrays.asList("item1", "item2"), record.items());
+    assertEquals("Test Bounded", boundedGeneric.name());
+    assertEquals(42, boundedGeneric.value());
+    assertEquals(Arrays.asList("item1", "item2"), boundedGeneric.items());
 
     // Test that the bounded generic works with Number subtypes
     BoundedGeneric<Long, List<String>> longRecord =

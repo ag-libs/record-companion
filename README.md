@@ -1,6 +1,8 @@
 # Record Companion
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=record-companion_record-companion&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=record-companion_record-companion)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=record-companion_record-companion&metric=coverage)](https://sonarcloud.io/summary/new_code?id=record-companion_record-companion)
 
 A simple Java library that enhances Java records with builder pattern support and optional
 validation capabilities through compile-time code generation.
@@ -42,9 +44,8 @@ compileOnly 'io.github.record-companion:record-companion-processor:0.0.3'
 import io.github.recordcompanion.annotations.Builder;
 
 @Builder
-public record User(String name, int age, String email) {
+public record User(String name, int age, String email) {}
 
-}
 ```
 
 ### 3. Use the Generated Builder
