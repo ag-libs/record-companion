@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0          http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>io.github.record-companion</groupId>
   <artifactId>record-companion</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.0.1</version>
   <packaging>pom</packaging>
 
   <name>record-companion-parent</name>
@@ -33,7 +33,7 @@
   <scm>
     <connection>scm:git:https://github.com/record-companion/record-companion.git</connection>
     <developerConnection>scm:git:https://github.com/record-companion/record-companion.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>v0.0.1</tag>
     <url>https://github.com/record-companion/record-companion/tree/main</url>
   </scm>
 
@@ -146,13 +146,13 @@
         <version>2.45.0</version>
         <configuration>
           <java>
-            <googleJavaFormat/>
+            <googleJavaFormat />
           </java>
           <markdown>
             <includes>
               <include>**/*.md</include>
             </includes>
-            <flexmark/>
+            <flexmark />
           </markdown>
           <pom>
             <sortPom>
