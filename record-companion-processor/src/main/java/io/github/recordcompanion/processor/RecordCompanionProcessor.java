@@ -26,7 +26,6 @@ import javax.tools.Diagnostic;
 })
 @SupportedSourceVersion(SourceVersion.RELEASE_17)
 public class RecordCompanionProcessor extends AbstractProcessor {
-  static final String GENERATOR_VALUE = RecordCompanionProcessor.class.getName();
 
   private BuilderGenerator builderGenerator;
   private CheckGenerator checkGenerator;

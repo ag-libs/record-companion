@@ -61,7 +61,7 @@ public class CheckGenerator {
             .addTypeVariables(typeVariables)
             .addAnnotation(
                 AnnotationSpec.builder(Generated.class)
-                    .addMember("value", "$S", RecordCompanionProcessor.GENERATOR_VALUE)
+                    .addMember("value", "$S", Constants.GENERATOR_VALUE)
                     .build());
 
     // Add validation field

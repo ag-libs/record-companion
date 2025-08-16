@@ -173,7 +173,7 @@ public class BuilderGenerator {
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(
                 AnnotationSpec.builder(Generated.class)
-                    .addMember("value", "$S", RecordCompanionProcessor.GENERATOR_VALUE)
+                    .addMember("value", "$S", Constants.GENERATOR_VALUE)
                     .build())
             .addJavadoc("Interface for updating $N record values.\n", recordName);
 
@@ -226,7 +226,7 @@ public class BuilderGenerator {
             .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
             .addAnnotation(
                 AnnotationSpec.builder(Generated.class)
-                    .addMember("value", "$S", RecordCompanionProcessor.GENERATOR_VALUE)
+                    .addMember("value", "$S", Constants.GENERATOR_VALUE)
                     .build())
             .addSuperinterface(updaterInterfaceType)
             .addJavadoc("Builder class for {@link $T} record.\n", recordTypeName);
