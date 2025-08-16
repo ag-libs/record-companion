@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.github.record-companion</groupId>
     <artifactId>record-companion</artifactId>
-    <version>0.0.4-SNAPSHOT</version>
+    <version>0.0.4</version>
   </parent>
 
   <artifactId>record-companion-tests</artifactId>
