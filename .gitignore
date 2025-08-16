@@ -11,3 +11,5 @@ release.properties
 *.iws
 *.iml
 *.ipr
+
+.claude/
