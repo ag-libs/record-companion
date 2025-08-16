@@ -9,6 +9,7 @@
 
   <name>record-companion-parent</name>
   <description>Java Record Enhancement Library - Builder Pattern Support</description>
+  <url>https://github.com/record-companion/record-companion</url>
 
   <licenses>
     <license>
@@ -88,7 +89,6 @@
             <releaseProfiles>release</releaseProfiles>
             <goals>deploy</goals>
             <tagNameFormat>v@{project.version}</tagNameFormat>
-            <arguments>-Dspotless.check.skip=true</arguments>
           </configuration>
         </plugin>
         <plugin>
@@ -154,11 +154,6 @@
             </includes>
             <flexmark />
           </markdown>
-          <pom>
-            <sortPom>
-              <!-- see https://github.com/diffplug/spotless/blob/main/plugin-maven/README.md#sortpom -->
-            </sortPom>
-          </pom>
         </configuration>
         <executions>
           <execution>
