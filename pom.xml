@@ -148,6 +148,9 @@
                   <goal>report-aggregate</goal>
                 </goals>
                 <phase>verify</phase>
+                <configuration>
+                  <outputDirectory>${maven.multiModuleProjectDirectory}/target/site/jacoco</outputDirectory>
+                </configuration>
               </execution>
             </executions>
           </plugin>
