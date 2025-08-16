@@ -2,7 +2,8 @@
 
 ## AI Assistant Used
 
-This project was developed with assistance from **Claude Code** (Anthropic's Claude Sonnet 4), an AI coding assistant.
+This project was developed with assistance from **Claude Code** (Anthropic's Claude Sonnet 4), an AI
+coding assistant.
 
 ## AI Contributions
 
@@ -14,6 +15,7 @@ This project was developed with assistance from **Claude Code** (Anthropic's Cla
 ## Human Oversight
 
 All AI-generated code was reviewed and validated through:
+
 - Compilation verification
 - Test execution and validation
 - Code structure and naming consistency checks
@@ -22,6 +24,7 @@ All AI-generated code was reviewed and validated through:
 ## Development Approach
 
 The AI assistant helped accelerate development by:
+
 1. Setting up the complete project structure efficiently
 2. Implementing annotation processing patterns correctly
 3. Creating comprehensive test coverage

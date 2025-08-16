@@ -24,17 +24,3 @@ public class Example {
 // <- newline should be here
 ```
 
-## Project-Specific Guidelines
-
-### Build and Test Commands
-
-- To build: `mvn clean compile`
-- To run tests: `mvn test`
-- To clean: `mvn clean`
-
-### Module Structure
-
-- `record-companion-annotations/` - Contains annotation definitions
-- `record-companion-processor/` - Contains annotation processor implementation
-- `record-companion-tests/` - Contains integration tests
-
