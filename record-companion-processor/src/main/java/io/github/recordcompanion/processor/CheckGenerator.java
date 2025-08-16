@@ -1,6 +1,5 @@
 package io.github.recordcompanion.processor;
 
-import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
@@ -12,7 +11,6 @@ import com.squareup.javapoet.TypeVariableName;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
-import javax.annotation.processing.Generated;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.RecordComponentElement;
@@ -58,11 +56,7 @@ public class CheckGenerator {
     TypeSpec.Builder checkClass =
         TypeSpec.classBuilder(className)
             .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-            .addTypeVariables(typeVariables)
-            .addAnnotation(
-                AnnotationSpec.builder(Generated.class)
-                    .addMember("value", "$S", Constants.GENERATOR_VALUE)
-                    .build());
+            .addTypeVariables(typeVariables);
 
     // Add validation field
     FieldSpec validationField =
