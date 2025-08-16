@@ -4,7 +4,7 @@
 
   <groupId>io.github.record-companion</groupId>
   <artifactId>record-companion</artifactId>
-  <version>0.0.5-SNAPSHOT</version>
+  <version>0.1.0</version>
   <packaging>pom</packaging>
 
   <name>record-companion-parent</name>
@@ -34,7 +34,7 @@
   <scm>
     <connection>scm:git:https://github.com/record-companion/record-companion.git</connection>
     <developerConnection>scm:git:https://github.com/record-companion/record-companion.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>v0.1.0</tag>
     <url>https://github.com/record-companion/record-companion/tree/main</url>
   </scm>
 
