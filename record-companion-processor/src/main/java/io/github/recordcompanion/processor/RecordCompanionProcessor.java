@@ -25,7 +25,8 @@ import javax.tools.Diagnostic;
   "io.github.recordcompanion.annotations.ValidCheck"
 })
 @SupportedSourceVersion(SourceVersion.RELEASE_17)
-public class RecordBuilderProcessor extends AbstractProcessor {
+public class RecordCompanionProcessor extends AbstractProcessor {
+  static final String GENERATOR_VALUE = RecordCompanionProcessor.class.getName();
 
   private BuilderGenerator builderGenerator;
   private CheckGenerator checkGenerator;

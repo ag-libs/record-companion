@@ -1,3 +1,5 @@
+import io.github.recordcompanion.processor.RecordCompanionProcessor;
+
 /**
  * Module for RecordCompanion annotation processor.
  *
@@ -13,5 +15,5 @@ module io.github.recordcompanion.processor {
 
   // Provide annotation processor service
   provides javax.annotation.processing.Processor with
-      io.github.recordcompanion.processor.RecordBuilderProcessor;
+      RecordCompanionProcessor;
 }

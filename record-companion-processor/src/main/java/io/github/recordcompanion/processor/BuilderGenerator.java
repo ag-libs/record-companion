@@ -29,8 +29,6 @@ import javax.lang.model.type.TypeMirror;
 /** Generates builder pattern implementations for record classes. */
 public class BuilderGenerator {
 
-  private static final String GENERATOR_VALUE =
-      "io.github.recordcompanion.processor.RecordBuilderProcessor";
   private static final String BUILDER_SUFFIX = "Builder";
   private static final String UPDATER_SUFFIX = "Updater";
   private static final ClassName CONSUMER_TYPE = ClassName.get("java.util.function", "Consumer");
@@ -175,7 +173,7 @@ public class BuilderGenerator {
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(
                 AnnotationSpec.builder(Generated.class)
-                    .addMember("value", "$S", GENERATOR_VALUE)
+                    .addMember("value", "$S", RecordCompanionProcessor.GENERATOR_VALUE)
                     .build())
             .addJavadoc("Interface for updating $N record values.\n", recordName);
 
@@ -228,7 +226,7 @@ public class BuilderGenerator {
             .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
             .addAnnotation(
                 AnnotationSpec.builder(Generated.class)
-                    .addMember("value", "$S", GENERATOR_VALUE)
+                    .addMember("value", "$S", RecordCompanionProcessor.GENERATOR_VALUE)
                     .build())
             .addSuperinterface(updaterInterfaceType)
             .addJavadoc("Builder class for {@link $T} record.\n", recordTypeName);

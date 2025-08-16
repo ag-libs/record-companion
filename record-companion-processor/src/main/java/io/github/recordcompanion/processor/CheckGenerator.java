@@ -23,8 +23,6 @@ import javax.lang.model.type.TypeMirror;
 /** Generates check classes for ValidCheck integration. */
 public class CheckGenerator {
 
-  private static final String GENERATOR_VALUE =
-      "io.github.recordcompanion.processor.RecordBuilderProcessor";
   private static final String CHECK_SUFFIX = "Check";
 
   private static final ClassName VALIDCHECK_CHECK = ClassName.get("io.github.validcheck", "Check");
@@ -64,7 +62,7 @@ public class CheckGenerator {
             .addTypeVariables(typeVariables)
             .addAnnotation(
                 AnnotationSpec.builder(Generated.class)
-                    .addMember("value", "$S", GENERATOR_VALUE)
+                    .addMember("value", "$S", RecordCompanionProcessor.GENERATOR_VALUE)
                     .build());
 
     // Add validation field
