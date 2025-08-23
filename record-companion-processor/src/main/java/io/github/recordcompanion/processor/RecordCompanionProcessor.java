@@ -39,7 +39,7 @@ public class RecordCompanionProcessor extends AbstractProcessor {
       builderGenerator = new BuilderGenerator(processingEnv);
     }
 
-    if (checkGenerator == null && isValidCheckAvailable()) {
+    if (checkGenerator == null) {
       checkGenerator = new CheckGenerator(processingEnv);
     }
 
@@ -59,7 +59,7 @@ public class RecordCompanionProcessor extends AbstractProcessor {
       try {
         builderGenerator.generateBuilderAndUpdaterTypes(recordElement);
 
-        if (checkGenerator != null && recordElement.getAnnotation(ValidCheck.class) != null) {
+        if (recordElement.getAnnotation(ValidCheck.class) != null) {
           checkGenerator.generateCheck(recordElement);
         }
       } catch (IOException e) {
@@ -76,10 +76,5 @@ public class RecordCompanionProcessor extends AbstractProcessor {
     }
 
     return true;
-  }
-
-  private boolean isValidCheckAvailable() {
-    // Use Elements API to check if ValidCheck is available at compile time
-    return processingEnv.getElementUtils().getTypeElement("io.github.validcheck.Check") != null;
   }
 }

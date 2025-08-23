@@ -1,22 +1,23 @@
 package io.github.recordcompanion.tests.records;
 
-import static io.github.recordcompanion.tests.records.UserProfileCheck.check;
-import static io.github.recordcompanion.tests.records.UserProfileCheck.checkUsername;
-
 import io.github.recordcompanion.annotations.Builder;
 import io.github.recordcompanion.annotations.ValidCheck;
 import java.util.Map;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 
 @Builder
 @ValidCheck
-public record UserProfile(String username, int score, Map<String, String> metadata) {
+public record UserProfile(
+    @NotNull @Size(min = 3, max = 20) String username,
+    @Min(0) @Max(100) int score,
+    @NotEmpty Map<String, String> metadata,
+    @Pattern(regexp = ".*") String address) {
   public UserProfile {
-    check()
-        .checkUsername(username, stringValidator -> stringValidator.notNull().lengthBetween(3, 20))
-        .checkScore(score, numericValidator -> numericValidator.isPositive().max(100))
-        .checkMetadata(metadata, mapValidator -> mapValidator.notNull().notEmpty())
-        .validate();
-
-    checkUsername(username).notNull();
+    // UserProfileCheck.validate(username, score, metadata);
   }
 }

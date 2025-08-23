@@ -1,10 +1,9 @@
 package io.github.recordcompanion.tests.records;
 
+import static io.github.validcheck.ValidCheck.check;
+
 import io.github.recordcompanion.annotations.Builder;
 import io.github.recordcompanion.annotations.ValidCheck;
-import io.github.validcheck.CollectionValidator;
-import io.github.validcheck.StringValidator;
-import io.github.validcheck.ValueValidator;
 import java.util.List;
 
 @Builder
@@ -12,10 +11,10 @@ import java.util.List;
 public record SimpleUser(String name, int age, List<String> aliases) {
 
   public SimpleUser {
-    SimpleUserCheck.check()
-        .checkAge(age, ValueValidator::notNull)
-        .checkName(name, StringValidator::notEmpty)
-        .checkAliases(aliases, CollectionValidator::isNull)
+    check()
+        .notNull(age, "age")
+        .notNullOrEmpty(name, "name")
+        .assertTrue(aliases == null, "aliases")
         .validate();
   }
 }

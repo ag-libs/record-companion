@@ -4,16 +4,17 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=record-companion_record-companion&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=record-companion_record-companion)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=record-companion_record-companion&metric=coverage)](https://sonarcloud.io/summary/new_code?id=record-companion_record-companion)
 
-A simple Java library that enhances Java records with builder pattern support and optional
-validation capabilities through compile-time code generation.
+A simple Java library that enhances Java records with builder pattern support and
+Bean Validation integration through compile-time code generation.
 
 ## What Record Companion Provides
 
 - Generate fluent builder classes for Java records with a single annotation
 - Optional annotation copying from records to generated builders
-- Optional validation integration through `@ValidCheck` annotation
+- **Bean Validation integration** - Automatic mapping from Bean Validation annotations to ValidCheck API
+- Built-in support for `@NotNull`, `@NotEmpty`, `@Size`, `@Pattern`, `@Min/@Max` combinations, `@Positive`, `@Negative`, `@PositiveOrZero`, and `@NegativeOrZero`
 - Works with any IDE without special plugins
-- No runtime dependencies required
+- No runtime dependencies required for builders (ValidCheck integration requires ValidCheck library)
 
 ## Quick Start
 
@@ -22,11 +23,26 @@ validation capabilities through compile-time code generation.
 **Maven:**
 
 ```xml
-
+<!-- Record Companion Processor -->
 <dependency>
   <groupId>io.github.record-companion</groupId>
   <artifactId>record-companion-processor</artifactId>
-  <version>0.1.0</version>
+  <version>0.1.1</version>
+  <scope>provided</scope>
+</dependency>
+
+<!-- ValidCheck library (required only for @ValidCheck integration) -->
+<dependency>
+  <groupId>io.github.validcheck</groupId>
+  <artifactId>validcheck</artifactId>
+  <version>0.9.3</version>
+</dependency>
+
+<!-- Bean Validation API (required only for @ValidCheck integration) -->
+<dependency>
+  <groupId>javax.validation</groupId>
+  <artifactId>validation-api</artifactId>
+  <version>2.0.1.Final</version>
   <scope>provided</scope>
 </dependency>
 ```
@@ -34,8 +50,15 @@ validation capabilities through compile-time code generation.
 **Gradle:**
 
 ```gradle
-annotationProcessor 'io.github.record-companion:record-companion-processor:0.1.0'
-compileOnly 'io.github.record-companion:record-companion-processor:0.1.0'
+// Record Companion Processor  
+annotationProcessor 'io.github.record-companion:record-companion-processor:0.1.1'
+compileOnly 'io.github.record-companion:record-companion-processor:0.1.1'
+
+// ValidCheck library (required only for @ValidCheck integration)
+implementation 'io.github.validcheck:validcheck:0.9.3'
+
+// Bean Validation API (required only for @ValidCheck integration) 
+compileOnly 'javax.validation:validation-api:2.0.1.Final'
 ```
 
 ### 2. Annotate Your Records
@@ -118,30 +141,65 @@ UserBuilder.builder(existingUser)
 UserBuilder.with(existingUser, updater -> updater.age(31))
 ```
 
-### Optional Validation Integration
+### Bean Validation Integration
 
-Use `@ValidCheck` for custom validation support
+Use `@ValidCheck` with Bean Validation annotations for automatic validation code generation
 with [ValidCheck library](https://github.com/validcheck/validcheck):
 
 ```java
-
 @Builder
 @ValidCheck
-public record Product(String name, BigDecimal price, int quantity) {
+public record UserProfile(
+    @NotNull @Size(min = 3, max = 20) String username,
+    @Min(0) @Max(100) int score,
+    @NotEmpty Map<String, String> metadata,
+    @Pattern(regexp = "[A-Z]{3}[0-9]{3}") String code,
+    @Positive int positiveAmount,
+    @NegativeOrZero int balance) {
 
-  public Product {
-    // Your validation logic using generated helper
-    ProductCheck.check()
-        .checkName(name, StringValidator::notNullOrEmpty)
-        .checkPrice(price, value -> value
-            .notNull()
-            .satisfies(p -> p.compareTo(BigDecimal.ZERO) > 0, "must be positive"))
-        .checkQuantity(quantity, value -> value
-            .isNonNegative()
-            .max(1000))
-        .validate();
+  public UserProfile {
+    // Automatic validation using generated check class
+    UserProfileCheck.validate(username, score, metadata, code, positiveAmount, balance);
   }
 }
+```
+
+**Supported Bean Validation Annotations:**
+
+- `@NotNull` → `.notNull(value, fieldName)`
+- `@NotEmpty` → `.notNullOrEmpty(value, fieldName)`
+- `@Size(min, max)` → `.hasLength(value, min, max, fieldName)`
+- `@Pattern(regexp)` → `.matches(value, pattern, fieldName)`
+- `@Min + @Max` (combined) → `.inRange(value, min, max, fieldName)`
+- `@Positive` → `.inRange(value, 1, Integer.MAX_VALUE, fieldName)`
+- `@Negative` → `.inRange(value, Integer.MIN_VALUE, -1, fieldName)`
+- `@PositiveOrZero` → `.inRange(value, 0, Integer.MAX_VALUE, fieldName)`
+- `@NegativeOrZero` → `.inRange(value, Integer.MIN_VALUE, 0, fieldName)`
+
+**Generated Check Class Methods:**
+
+```java
+// BatchValidator for manual control
+UserProfileCheck.check(username, score, metadata, code, positiveAmount, balance)
+
+// Validator for immediate validation with chaining  
+UserProfileCheck.require(username, score, metadata, code, positiveAmount, balance)
+
+// Convenience method - validates and throws on failure
+UserProfileCheck.validate(username, score, metadata, code, positiveAmount, balance)
+```
+
+**Example Generated Validation Chain:**
+
+```java
+return validator
+    .notNull(username, "username")
+    .hasLength(username, 3, 20, "username")
+    .inRange(score, 0, 100, "score") 
+    .notNullOrEmpty(metadata, "metadata")
+    .matches(code, "[A-Z]{3}[0-9]{3}", "code")
+    .inRange(positiveAmount, 1, Integer.MAX_VALUE, "positiveAmount")
+    .inRange(balance, Integer.MIN_VALUE, 0, "balance");
 ```
 
 ## Requirements
