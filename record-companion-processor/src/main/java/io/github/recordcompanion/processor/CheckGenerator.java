@@ -18,8 +18,14 @@ import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.TypeElement;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
+import javax.validation.constraints.Negative;
+import javax.validation.constraints.NegativeOrZero;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Positive;
+import javax.validation.constraints.PositiveOrZero;
 import javax.validation.constraints.Size;
 
 /** Generates check classes for ValidCheck integration based on Bean Validation annotations. */
@@ -114,7 +120,7 @@ public class CheckGenerator {
     // Get the accessor method element, which is where annotations are typically placed
     Element accessor = component.getAccessor();
 
-    // Check for @NotNull (use class-based approach only to avoid duplicates)
+    // Check for @NotNull
     NotNull notNullAnnotation = accessor.getAnnotation(NotNull.class);
     if (notNullAnnotation != null) {
       rules.add(new ValidationRule("notNull", componentName));
@@ -126,6 +132,13 @@ public class CheckGenerator {
       rules.add(new ValidationRule("notNullOrEmpty", componentName));
     }
 
+    // Check for @NotBlank
+    NotBlank notBlankAnnotation = accessor.getAnnotation(NotBlank.class);
+    if (notBlankAnnotation != null) {
+      // TODO: Add notBlank() method to ValidCheck core
+      // Temporarily skip until ValidCheck core has notBlank() method
+    }
+
     // Check for @Size
     Size sizeAnnotation = accessor.getAnnotation(Size.class);
     if (sizeAnnotation != null) {
@@ -134,13 +147,56 @@ public class CheckGenerator {
       rules.add(new ValidationRule("hasLength", componentName, min, max));
     }
 
-    // Check for @Min and @Max combination
+    // Check for @Pattern
+    Pattern patternAnnotation = accessor.getAnnotation(Pattern.class);
+    if (patternAnnotation != null) {
+      String regex = patternAnnotation.regexp();
+      rules.add(new ValidationRule("matches", componentName, regex));
+    }
+
+    // Check for @Min and @Max - handle individually and combined
     Min minAnnotation = accessor.getAnnotation(Min.class);
     Max maxAnnotation = accessor.getAnnotation(Max.class);
+
     if (minAnnotation != null && maxAnnotation != null) {
+      // Both present - use range validation (this works)
       long min = minAnnotation.value();
       long max = maxAnnotation.value();
       rules.add(new ValidationRule("inRange", componentName, (int) min, (int) max));
+    } else if (minAnnotation != null) {
+      // Only @Min present - TODO: Add min() method to ValidCheck core
+      // Temporarily skip until ValidCheck core has min() method
+    } else if (maxAnnotation != null) {
+      // Only @Max present - TODO: Add max() method to ValidCheck core
+      // Temporarily skip until ValidCheck core has max() method
+    }
+
+    // Check for @Positive (number > 0)
+    Positive positiveAnnotation = accessor.getAnnotation(Positive.class);
+    if (positiveAnnotation != null) {
+      // Map @Positive to inRange(value, 1, Integer.MAX_VALUE) for practical validation
+      rules.add(new ValidationRule("inRange", componentName, 1, Integer.MAX_VALUE));
+    }
+
+    // Check for @Negative (number < 0)
+    Negative negativeAnnotation = accessor.getAnnotation(Negative.class);
+    if (negativeAnnotation != null) {
+      // Map @Negative to inRange(value, Integer.MIN_VALUE, -1) for practical validation
+      rules.add(new ValidationRule("inRange", componentName, Integer.MIN_VALUE, -1));
+    }
+
+    // Check for @PositiveOrZero (number >= 0)
+    PositiveOrZero positiveOrZeroAnnotation = accessor.getAnnotation(PositiveOrZero.class);
+    if (positiveOrZeroAnnotation != null) {
+      // Map @PositiveOrZero to inRange(value, 0, Integer.MAX_VALUE) for practical validation
+      rules.add(new ValidationRule("inRange", componentName, 0, Integer.MAX_VALUE));
+    }
+
+    // Check for @NegativeOrZero (number <= 0)
+    NegativeOrZero negativeOrZeroAnnotation = accessor.getAnnotation(NegativeOrZero.class);
+    if (negativeOrZeroAnnotation != null) {
+      // Map @NegativeOrZero to inRange(value, Integer.MIN_VALUE, 0) for practical validation
+      rules.add(new ValidationRule("inRange", componentName, Integer.MIN_VALUE, 0));
     }
 
     return rules;
@@ -164,7 +220,11 @@ public class CheckGenerator {
       for (ValidationRule rule : component.rules()) {
         chain.add("\n        .$L($L", rule.method(), rule.fieldName());
         for (Object arg : rule.args()) {
-          chain.add(", $L", arg);
+          if (arg instanceof String) {
+            chain.add(", $S", arg); // Use $S for string literals (adds quotes)
+          } else {
+            chain.add(", $L", arg); // Use $L for other literals (numbers, etc.)
+          }
         }
         chain.add(", $S)", rule.fieldName());
       }

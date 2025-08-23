@@ -10,6 +10,7 @@ module io.github.recordcompanion.processor {
   requires java.compiler;
   requires com.squareup.javapoet;
   requires static java.validation;
+  requires static io.github.validcheck;
 
   // Export annotations for use by other modules
   exports io.github.recordcompanion.annotations;
