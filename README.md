@@ -35,14 +35,14 @@ Bean Validation integration through compile-time code generation.
 <dependency>
   <groupId>io.github.validcheck</groupId>
   <artifactId>validcheck</artifactId>
-  <version>0.9.3</version>
+  <version>0.1.1</version>
 </dependency>
 
 <!-- Bean Validation API (required only for @ValidCheck integration) -->
 <dependency>
   <groupId>javax.validation</groupId>
   <artifactId>validation-api</artifactId>
-  <version>2.0.1.Final</version>
+  <version>0.1.1</version>
   <scope>provided</scope>
 </dependency>
 ```
