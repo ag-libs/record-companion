@@ -123,13 +123,13 @@ public class CheckGenerator {
     // Check for @NotNull
     NotNull notNullAnnotation = accessor.getAnnotation(NotNull.class);
     if (notNullAnnotation != null) {
-      rules.add(new ValidationRule("notNull", componentName));
+      rules.add(new ValidationRule("notNull", componentName, List.of()));
     }
 
     // Check for @NotEmpty
     NotEmpty notEmptyAnnotation = accessor.getAnnotation(NotEmpty.class);
     if (notEmptyAnnotation != null) {
-      rules.add(new ValidationRule("notNullOrEmpty", componentName));
+      rules.add(new ValidationRule("notNullOrEmpty", componentName, List.of()));
     }
 
     // Check for @NotBlank
@@ -144,14 +144,14 @@ public class CheckGenerator {
     if (sizeAnnotation != null) {
       int min = sizeAnnotation.min();
       int max = sizeAnnotation.max();
-      rules.add(new ValidationRule("hasLength", componentName, min, max));
+      rules.add(new ValidationRule("hasLength", componentName, List.of(min, max)));
     }
 
     // Check for @Pattern
     Pattern patternAnnotation = accessor.getAnnotation(Pattern.class);
     if (patternAnnotation != null) {
       String regex = patternAnnotation.regexp();
-      rules.add(new ValidationRule("matches", componentName, regex));
+      rules.add(new ValidationRule("matches", componentName, List.of(regex)));
     }
 
     // Check for @Min and @Max - handle individually and combined
@@ -162,7 +162,7 @@ public class CheckGenerator {
       // Both present - use range validation (this works)
       long min = minAnnotation.value();
       long max = maxAnnotation.value();
-      rules.add(new ValidationRule("inRange", componentName, (int) min, (int) max));
+      rules.add(new ValidationRule("inRange", componentName, List.of((int) min, (int) max)));
     } else if (minAnnotation != null) {
       // Only @Min present - TODO: Add min() method to ValidCheck core
       // Temporarily skip until ValidCheck core has min() method
@@ -175,28 +175,28 @@ public class CheckGenerator {
     Positive positiveAnnotation = accessor.getAnnotation(Positive.class);
     if (positiveAnnotation != null) {
       // Map @Positive to inRange(value, 1, Integer.MAX_VALUE) for practical validation
-      rules.add(new ValidationRule("inRange", componentName, 1, Integer.MAX_VALUE));
+      rules.add(new ValidationRule("inRange", componentName, List.of(1, Integer.MAX_VALUE)));
     }
 
     // Check for @Negative (number < 0)
     Negative negativeAnnotation = accessor.getAnnotation(Negative.class);
     if (negativeAnnotation != null) {
       // Map @Negative to inRange(value, Integer.MIN_VALUE, -1) for practical validation
-      rules.add(new ValidationRule("inRange", componentName, Integer.MIN_VALUE, -1));
+      rules.add(new ValidationRule("inRange", componentName, List.of(Integer.MIN_VALUE, -1)));
     }
 
     // Check for @PositiveOrZero (number >= 0)
     PositiveOrZero positiveOrZeroAnnotation = accessor.getAnnotation(PositiveOrZero.class);
     if (positiveOrZeroAnnotation != null) {
       // Map @PositiveOrZero to inRange(value, 0, Integer.MAX_VALUE) for practical validation
-      rules.add(new ValidationRule("inRange", componentName, 0, Integer.MAX_VALUE));
+      rules.add(new ValidationRule("inRange", componentName, List.of(0, Integer.MAX_VALUE)));
     }
 
     // Check for @NegativeOrZero (number <= 0)
     NegativeOrZero negativeOrZeroAnnotation = accessor.getAnnotation(NegativeOrZero.class);
     if (negativeOrZeroAnnotation != null) {
       // Map @NegativeOrZero to inRange(value, Integer.MIN_VALUE, 0) for practical validation
-      rules.add(new ValidationRule("inRange", componentName, Integer.MIN_VALUE, 0));
+      rules.add(new ValidationRule("inRange", componentName, List.of(Integer.MIN_VALUE, 0)));
     }
 
     return rules;
@@ -326,5 +326,5 @@ public class CheckGenerator {
 
   private record ValidatedComponent(RecordComponentElement element, List<ValidationRule> rules) {}
 
-  private record ValidationRule(String method, String fieldName, Object... args) {}
+  private record ValidationRule(String method, String fieldName, List<Object> args) {}
 }
