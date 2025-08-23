@@ -1,43 +1,36 @@
 package io.github.recordcompanion.processor;
 
 import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.FieldSpec;
+import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
-import com.squareup.javapoet.TypeVariableName;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.TypeMirror;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 
-/** Generates check classes for ValidCheck integration. */
+/** Generates check classes for ValidCheck integration based on Bean Validation annotations. */
 public class CheckGenerator {
 
   private static final String CHECK_SUFFIX = "Check";
-  private static final String VALIDCHECK_PACKAGE = "io.github.validcheck";
-  private static final String CHECK_METHOD_PREFIX = "check";
-
-  private static final ClassName VALIDCHECK_CHECK = ClassName.get(VALIDCHECK_PACKAGE, CHECK_SUFFIX);
-  private static final ClassName VALIDCHECK_BATCH_CONTEXT =
-      ClassName.get(VALIDCHECK_PACKAGE, "BatchValidationContext");
-  private static final ClassName VALIDCHECK_VALUE_VALIDATOR =
-      ClassName.get(VALIDCHECK_PACKAGE, "ValueValidator");
-  private static final ClassName VALIDCHECK_STRING_VALIDATOR =
-      ClassName.get(VALIDCHECK_PACKAGE, "StringValidator");
-  private static final ClassName VALIDCHECK_NUMERIC_VALIDATOR =
-      ClassName.get(VALIDCHECK_PACKAGE, "NumericValidator");
-  private static final ClassName VALIDCHECK_COLLECTION_VALIDATOR =
-      ClassName.get(VALIDCHECK_PACKAGE, "CollectionValidator");
-  private static final ClassName VALIDCHECK_MAP_VALIDATOR =
-      ClassName.get(VALIDCHECK_PACKAGE, "MapValidator");
-  private static final ClassName CONSUMER_TYPE = ClassName.get("java.util.function", "Consumer");
+  private static final ClassName VALIDCHECK_CLASS =
+      ClassName.get("io.github.validcheck", "ValidCheck");
+  private static final ClassName BATCH_VALIDATOR =
+      ClassName.get("io.github.validcheck", "BatchValidator");
+  private static final ClassName VALIDATOR = ClassName.get("io.github.validcheck", "Validator");
 
   private final ProcessingEnvironment processingEnv;
 
@@ -50,248 +43,228 @@ public class CheckGenerator {
     String packageName = processingEnv.getElementUtils().getPackageOf(recordElement).toString();
 
     List<? extends RecordComponentElement> components = recordElement.getRecordComponents();
-    List<TypeVariableName> typeVariables =
-        recordElement.getTypeParameters().stream().map(TypeVariableName::get).toList();
+    List<ValidatedComponent> validatedComponents = extractValidatedComponents(components);
+
+    // Only generate if there are components with validation annotations
+    if (validatedComponents.isEmpty()) {
+      return;
+    }
 
     TypeSpec.Builder checkClass =
         TypeSpec.classBuilder(className)
             .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-            .addTypeVariables(typeVariables);
-
-    // Add validation field
-    FieldSpec validationField =
-        FieldSpec.builder(VALIDCHECK_BATCH_CONTEXT, "validation")
-            .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
-            .build();
-    checkClass.addField(validationField);
+            .addJavadoc("Generated check class for $L record.\n\n", recordElement.getSimpleName())
+            .addJavadoc(
+                "<p>This class provides validation methods that map Bean Validation annotations to ValidCheck API\n")
+            .addJavadoc("calls for components with validation annotations.\n");
 
     // Add private constructor
     MethodSpec constructor =
         MethodSpec.constructorBuilder()
             .addModifiers(Modifier.PRIVATE)
-            .addStatement("this.validation = $T.batch()", VALIDCHECK_CHECK)
+            .addComment("Utility class")
             .build();
     checkClass.addMethod(constructor);
 
-    // Add static factory method
-    TypeName returnType =
-        typeVariables.isEmpty()
-            ? ClassName.get(packageName, className)
-            : ParameterizedTypeName.get(
-                ClassName.get(packageName, className), typeVariables.toArray(new TypeName[0]));
+    // Generate method parameters and validation chain
+    List<ParameterSpec> parameters = generateParameters(validatedComponents);
+    CodeBlock validationChain = generateValidationChain(validatedComponents);
 
+    // Add check method
     MethodSpec checkMethod =
-        MethodSpec.methodBuilder(CHECK_METHOD_PREFIX)
-            .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-            .addTypeVariables(typeVariables)
-            .returns(returnType)
-            .addStatement(
-                "return new $T" + (typeVariables.isEmpty() ? "()" : "<>()"),
-                ClassName.get(packageName, className))
-            .build();
+        createCheckMethod(parameters, validationChain, recordElement.getSimpleName().toString());
     checkClass.addMethod(checkMethod);
 
-    // Add validation methods for each component
-    for (RecordComponentElement component : components) {
-      MethodSpec validationMethod =
-          createValidationMethod(component, className, packageName, typeVariables);
-      checkClass.addMethod(validationMethod);
+    // Add require method
+    MethodSpec requireMethod =
+        createRequireMethod(parameters, validationChain, recordElement.getSimpleName().toString());
+    checkClass.addMethod(requireMethod);
 
-      // Add static field-specific validation method (skip for generic types)
-      MethodSpec staticValidationMethod = createStaticValidationMethod(component);
-      if (staticValidationMethod != null) {
-        checkClass.addMethod(staticValidationMethod);
-      }
-    }
-
-    // Add context() method
-    MethodSpec contextMethod =
-        MethodSpec.methodBuilder("context")
-            .addModifiers(Modifier.PUBLIC)
-            .returns(VALIDCHECK_BATCH_CONTEXT)
-            .addStatement("return validation")
-            .build();
-    checkClass.addMethod(contextMethod);
-
-    // Add validate() method
+    // Add validate method
     MethodSpec validateMethod =
-        MethodSpec.methodBuilder("validate")
-            .addModifiers(Modifier.PUBLIC)
-            .addStatement("validation.validate()")
-            .build();
+        createValidateMethod(parameters, recordElement.getSimpleName().toString());
     checkClass.addMethod(validateMethod);
 
-    JavaFile javaFile = JavaFile.builder(packageName, checkClass.build()).indent("  ").build();
+    // Add buildValidation method
+    MethodSpec buildValidationMethod = createBuildValidationMethod(parameters, validationChain);
+    checkClass.addMethod(buildValidationMethod);
 
+    JavaFile javaFile = JavaFile.builder(packageName, checkClass.build()).indent("  ").build();
     javaFile.writeTo(processingEnv.getFiler());
   }
 
-  private MethodSpec createValidationMethod(
-      RecordComponentElement component,
-      String checkClassName,
-      String packageName,
-      List<TypeVariableName> typeVariables) {
+  private List<ValidatedComponent> extractValidatedComponents(
+      List<? extends RecordComponentElement> components) {
+    List<ValidatedComponent> validatedComponents = new ArrayList<>();
+
+    for (RecordComponentElement component : components) {
+      List<ValidationRule> rules = extractValidationRules(component);
+      if (!rules.isEmpty()) {
+        validatedComponents.add(new ValidatedComponent(component, rules));
+      }
+    }
+
+    return validatedComponents;
+  }
+
+  private List<ValidationRule> extractValidationRules(RecordComponentElement component) {
+    List<ValidationRule> rules = new ArrayList<>();
     String componentName = component.getSimpleName().toString();
-    TypeMirror componentType = component.asType();
-    TypeName componentTypeName = TypeName.get(componentType);
 
-    // Use ValueValidator<T> for all types
-    TypeName validatorType = getValidatorType(componentType);
-    TypeName consumerType = ParameterizedTypeName.get(CONSUMER_TYPE, validatorType);
+    // Get the accessor method element, which is where annotations are typically placed
+    Element accessor = component.getAccessor();
 
-    TypeName returnType =
-        typeVariables.isEmpty()
-            ? ClassName.get(packageName, checkClassName)
-            : ParameterizedTypeName.get(
-                ClassName.get(packageName, checkClassName), typeVariables.toArray(new TypeName[0]));
+    // Check for @NotNull (use class-based approach only to avoid duplicates)
+    NotNull notNullAnnotation = accessor.getAnnotation(NotNull.class);
+    if (notNullAnnotation != null) {
+      rules.add(new ValidationRule("notNull", componentName));
+    }
 
-    return MethodSpec.methodBuilder(CHECK_METHOD_PREFIX + capitalize(componentName))
-        .addModifiers(Modifier.PUBLIC)
-        .addParameter(componentTypeName, componentName)
-        .addParameter(consumerType, "validator")
-        .returns(returnType)
-        .addStatement("validator.accept(validation.check($L, $S))", componentName, componentName)
-        .addStatement("return this")
-        .build();
+    // Check for @NotEmpty
+    NotEmpty notEmptyAnnotation = accessor.getAnnotation(NotEmpty.class);
+    if (notEmptyAnnotation != null) {
+      rules.add(new ValidationRule("notNullOrEmpty", componentName));
+    }
+
+    // Check for @Size
+    Size sizeAnnotation = accessor.getAnnotation(Size.class);
+    if (sizeAnnotation != null) {
+      int min = sizeAnnotation.min();
+      int max = sizeAnnotation.max();
+      rules.add(new ValidationRule("hasLength", componentName, min, max));
+    }
+
+    // Check for @Min and @Max combination
+    Min minAnnotation = accessor.getAnnotation(Min.class);
+    Max maxAnnotation = accessor.getAnnotation(Max.class);
+    if (minAnnotation != null && maxAnnotation != null) {
+      long min = minAnnotation.value();
+      long max = maxAnnotation.value();
+      rules.add(new ValidationRule("inRange", componentName, (int) min, (int) max));
+    }
+
+    return rules;
   }
 
-  private MethodSpec createStaticValidationMethod(RecordComponentElement component) {
-    String componentName = component.getSimpleName().toString();
-    TypeMirror componentType = component.asType();
-    TypeName componentTypeName = TypeName.get(componentType);
-
-    // Skip static methods for generic types to avoid "non-static type variable T cannot be
-    // referenced from a static context"
-    if (containsTypeVariable(componentTypeName)) {
-      return null; // Will be filtered out
+  private List<ParameterSpec> generateParameters(List<ValidatedComponent> validatedComponents) {
+    List<ParameterSpec> parameters = new ArrayList<>();
+    for (ValidatedComponent component : validatedComponents) {
+      TypeName paramType = TypeName.get(component.element().asType());
+      String paramName = component.element().getSimpleName().toString();
+      parameters.add(ParameterSpec.builder(paramType, paramName).build());
     }
-
-    TypeName validatorType = getValidatorType(componentType);
-
-    return MethodSpec.methodBuilder(CHECK_METHOD_PREFIX + capitalize(componentName))
-        .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-        .addParameter(componentTypeName, componentName)
-        .returns(validatorType)
-        .addStatement("return $T.check($L)", VALIDCHECK_CHECK, componentName)
-        .build();
+    return parameters;
   }
 
-  private boolean containsTypeVariable(TypeName typeName) {
-    if (typeName instanceof TypeVariableName) {
-      return true;
+  private CodeBlock generateValidationChain(List<ValidatedComponent> validatedComponents) {
+    CodeBlock.Builder chain = CodeBlock.builder();
+    chain.add("return validator");
+
+    for (ValidatedComponent component : validatedComponents) {
+      for (ValidationRule rule : component.rules()) {
+        chain.add("\n        .$L($L", rule.method(), rule.fieldName());
+        for (Object arg : rule.args()) {
+          chain.add(", $L", arg);
+        }
+        chain.add(", $S)", rule.fieldName());
+      }
     }
-    if (typeName instanceof ParameterizedTypeName parameterizedType) {
-      return parameterizedType.typeArguments.stream().anyMatch(this::containsTypeVariable);
-    }
-    return false;
+
+    chain.add(";");
+    return chain.build();
   }
 
-  private String capitalize(String str) {
-    if (str == null || str.isEmpty()) {
-      return str;
+  private MethodSpec createCheckMethod(
+      List<ParameterSpec> parameters, CodeBlock validationChain, String recordName) {
+    MethodSpec.Builder method =
+        MethodSpec.methodBuilder("check")
+            .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+            .returns(BATCH_VALIDATOR)
+            .addJavadoc("Creates a batch validator for $L validation.\n\n", recordName);
+
+    for (ParameterSpec param : parameters) {
+      method.addParameter(param);
+      method.addJavadoc(
+          "@param $L the $L to validate (from validation annotations)\n", param.name, param.name);
     }
-    return str.substring(0, 1).toUpperCase() + str.substring(1);
+    method.addJavadoc("@return BatchValidator for manual validation control\n");
+
+    method.addStatement(
+        "return ($T) buildValidation($T.check(), $L)",
+        BATCH_VALIDATOR,
+        VALIDCHECK_CLASS,
+        parameters.stream().map(p -> p.name).reduce((a, b) -> a + ", " + b).orElse(""));
+
+    return method.build();
   }
 
-  private TypeName getValidatorType(TypeMirror componentType) {
-    String typeName = componentType.toString();
+  private MethodSpec createRequireMethod(
+      List<ParameterSpec> parameters, CodeBlock validationChain, String recordName) {
+    MethodSpec.Builder method =
+        MethodSpec.methodBuilder("require")
+            .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+            .returns(VALIDATOR)
+            .addJavadoc(
+                "Creates a validator for $L validation with immediate validation.\n\n", recordName);
 
-    // Check for String type
-    if ("java.lang.String".equals(typeName)) {
-      return VALIDCHECK_STRING_VALIDATOR;
+    for (ParameterSpec param : parameters) {
+      method.addParameter(param);
+      method.addJavadoc(
+          "@param $L the $L to validate (from validation annotations)\n", param.name, param.name);
     }
+    method.addJavadoc("@return Validator for chaining additional validations\n");
 
-    // Check for numeric types
-    if (isNumericType(componentType)) {
-      TypeName boxedType = getBoxedType(componentType);
-      return ParameterizedTypeName.get(VALIDCHECK_NUMERIC_VALIDATOR, boxedType);
-    }
+    method.addStatement(
+        "return buildValidation($T.require(), $L)",
+        VALIDCHECK_CLASS,
+        parameters.stream().map(p -> p.name).reduce((a, b) -> a + ", " + b).orElse(""));
 
-    // Check for collection types
-    if (isCollectionType(componentType)) {
-      // Use the full collection type, not just the element type
-      TypeName collectionType = TypeName.get(componentType);
-      return ParameterizedTypeName.get(VALIDCHECK_COLLECTION_VALIDATOR, collectionType);
-    }
-
-    // Check for map types
-    if (isMapType(componentType)) {
-      // Use the full map type
-      TypeName mapType = TypeName.get(componentType);
-      return ParameterizedTypeName.get(VALIDCHECK_MAP_VALIDATOR, mapType);
-    }
-
-    // Default to ValueValidator<T> for other types
-    TypeName boxedType = getBoxedType(componentType);
-    return ParameterizedTypeName.get(VALIDCHECK_VALUE_VALIDATOR, boxedType);
+    return method.build();
   }
 
-  private TypeName getBoxedType(TypeMirror typeMirror) {
-    // Box primitive types for generics
-    if (typeMirror.getKind().isPrimitive()) {
-      return switch (typeMirror.getKind()) {
-        case BOOLEAN -> ClassName.get(Boolean.class);
-        case BYTE -> ClassName.get(Byte.class);
-        case SHORT -> ClassName.get(Short.class);
-        case INT -> ClassName.get(Integer.class);
-        case LONG -> ClassName.get(Long.class);
-        case CHAR -> ClassName.get(Character.class);
-        case FLOAT -> ClassName.get(Float.class);
-        case DOUBLE -> ClassName.get(Double.class);
-        default -> TypeName.get(typeMirror);
-      };
-    }
-    return TypeName.get(typeMirror);
-  }
+  private MethodSpec createValidateMethod(List<ParameterSpec> parameters, String recordName) {
+    MethodSpec.Builder method =
+        MethodSpec.methodBuilder("validate")
+            .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+            .returns(void.class)
+            .addJavadoc(
+                "Convenience method that validates $L and throws on failure.\n\n", recordName);
 
-  private boolean isNumericType(TypeMirror typeMirror) {
-    if (typeMirror.getKind().isPrimitive()) {
-      return switch (typeMirror.getKind()) {
-        case BYTE, SHORT, INT, LONG, FLOAT, DOUBLE -> true;
-        default -> false;
-      };
+    for (ParameterSpec param : parameters) {
+      method.addParameter(param);
+      method.addJavadoc(
+          "@param $L the $L to validate (from validation annotations)\n", param.name, param.name);
     }
 
-    String typeName = typeMirror.toString();
-    return "java.lang.Byte".equals(typeName)
-        || "java.lang.Short".equals(typeName)
-        || "java.lang.Integer".equals(typeName)
-        || "java.lang.Long".equals(typeName)
-        || "java.lang.Float".equals(typeName)
-        || "java.lang.Double".equals(typeName)
-        || "java.math.BigInteger".equals(typeName)
-        || "java.math.BigDecimal".equals(typeName);
+    method.addStatement(
+        "check($L).validate()",
+        parameters.stream().map(p -> p.name).reduce((a, b) -> a + ", " + b).orElse(""));
+
+    return method.build();
   }
 
-  private boolean isCollectionType(TypeMirror typeMirror) {
-    String typeName = typeMirror.toString();
+  private MethodSpec createBuildValidationMethod(
+      List<ParameterSpec> parameters, CodeBlock validationChain) {
+    MethodSpec.Builder method =
+        MethodSpec.methodBuilder("buildValidation")
+            .addModifiers(Modifier.PRIVATE, Modifier.STATIC)
+            .returns(VALIDATOR)
+            .addParameter(VALIDATOR, "validator")
+            .addJavadoc("Builds validation chain from Bean Validation annotations.\n\n")
+            .addJavadoc("@param validator the base validator instance\n");
 
-    // Check for common collection types and their generic variants
-    return typeName.startsWith("java.util.List<")
-        || typeName.startsWith("java.util.Set<")
-        || typeName.startsWith("java.util.Collection<")
-        || typeName.startsWith("java.util.ArrayList<")
-        || typeName.startsWith("java.util.LinkedList<")
-        || typeName.startsWith("java.util.HashSet<")
-        || typeName.startsWith("java.util.TreeSet<")
-        || typeName.equals("java.util.List")
-        || typeName.equals("java.util.Set")
-        || typeName.equals("java.util.Collection");
+    for (ParameterSpec param : parameters) {
+      method.addParameter(param);
+      method.addJavadoc("@param $L the $L to validate\n", param.name, param.name);
+    }
+    method.addJavadoc("@return validator with validation chain applied\n");
+
+    method.addCode(validationChain);
+
+    return method.build();
   }
 
-  private boolean isMapType(TypeMirror typeMirror) {
-    String typeName = typeMirror.toString();
+  private record ValidatedComponent(RecordComponentElement element, List<ValidationRule> rules) {}
 
-    // Check for common map types and their generic variants
-    return typeName.startsWith("java.util.Map<")
-        || typeName.startsWith("java.util.HashMap<")
-        || typeName.startsWith("java.util.LinkedHashMap<")
-        || typeName.startsWith("java.util.TreeMap<")
-        || typeName.startsWith("java.util.ConcurrentHashMap<")
-        || typeName.equals("java.util.Map")
-        || typeName.equals("java.util.HashMap")
-        || typeName.equals("java.util.LinkedHashMap")
-        || typeName.equals("java.util.TreeMap")
-        || typeName.equals("java.util.ConcurrentHashMap");
-  }
+  private record ValidationRule(String method, String fieldName, Object... args) {}
 }
