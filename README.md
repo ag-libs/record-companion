@@ -144,8 +144,7 @@ UserBuilder.with(existingUser, updater -> updater.age(31))
 
 ### Bean Validation Integration
 
-Use `@ValidCheck` with Bean Validation annotations for automatic validation code generation
-with [ValidCheck library](https://github.com/validcheck/validcheck):
+Add `@ValidCheck` to generate validation code using [ValidCheck library](https://github.com/validcheck/validcheck):
 
 ```java
 @Builder
@@ -153,79 +152,28 @@ with [ValidCheck library](https://github.com/validcheck/validcheck):
 public record UserProfile(
     @NotNull @NotBlank @Size(min = 3, max = 20) String username,
     @Min(0) @Max(100) Integer age,
-    @Min(1) Integer minFollowers,  // Individual @Min validation
-    @Max(5000) Integer maxConnections,  // Individual @Max validation
-    @Pattern(regexp = "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}") String email,  // Optional field
-    @Size(min = 10, max = 200) String bio,  // Optional field
-    @NotBlank String displayName) {
+    @Pattern(regexp = "\\w+@\\w+\\.\\w+") String email) {
 
   public UserProfile {
-    // Automatic validation using generated check class with enhanced ValidCheck API
-    UserProfileCheck.validate(username, age, minFollowers, maxConnections, email, bio, displayName);
+    UserProfileCheck.validate(username, age, email);
   }
 }
 ```
 
-**Supported Bean Validation Annotations:**
+**Supported Annotations:**
+- **Null checks:** `@NotNull`, `@NotEmpty`, `@NotBlank`
+- **Size/Length:** `@Size` (strings and collections)  
+- **Patterns:** `@Pattern`
+- **Numeric ranges:** `@Min`, `@Max`, `@DecimalMin`, `@DecimalMax`
+- **Sign constraints:** `@Positive`, `@Negative`, `@PositiveOrZero`, `@NegativeOrZero`
 
-- `@NotNull` → `.notNull(value, fieldName)`
-- `@NotEmpty` → `.notNullOrEmpty(value, fieldName)`
-- `@NotBlank` → `.notBlank(value, fieldName)` or `.nullOrNotBlank(value, fieldName)` for nullable fields
-- `@Size(min, max)` → `.hasLength(value, min, max, fieldName)` or `.nullOrHasLength(value, min, max, fieldName)` for nullable fields
-- `@Pattern(regexp)` → `.matches(value, pattern, fieldName)` or `.nullOrMatches(value, pattern, fieldName)` for nullable fields
-- `@Min(value)` → `.min(value, minValue, fieldName)` or `.nullOrMin(value, minValue, fieldName)` for nullable fields
-- `@Max(value)` → `.max(value, maxValue, fieldName)` or `.nullOrMax(value, maxValue, fieldName)` for nullable fields
-- `@DecimalMin(value)` → `.min(value, minValue, fieldName)` or `.nullOrMin(value, minValue, fieldName)` for nullable fields
-- `@DecimalMax(value)` → `.max(value, maxValue, fieldName)` or `.nullOrMax(value, maxValue, fieldName)` for nullable fields
-- `@Min + @Max` (combined) → `.inRange(value, min, max, fieldName)`
-- `@DecimalMin + @DecimalMax` (combined) → `.inRange(value, min, max, fieldName)`
-- `@Size(min, max)` on Collections → `.hasSize(collection, min, max, fieldName)` or `.nullOrHasSize(collection, min, max, fieldName)` for nullable collections
-- `@Positive` → `.inRange(value, 1, Integer.MAX_VALUE, fieldName)`
-- `@Negative` → `.inRange(value, Integer.MIN_VALUE, -1, fieldName)`
-- `@PositiveOrZero` → `.inRange(value, 0, Integer.MAX_VALUE, fieldName)`
-- `@NegativeOrZero` → `.inRange(value, Integer.MIN_VALUE, 0, fieldName)`
+Fields without `@NotNull` automatically use null-safe validation methods.
 
-**Null-Safe Validation:** Fields without `@NotNull` automatically use null-safe validation methods (e.g., `nullOrNotBlank`, `nullOrHasLength`) that skip validation when the field is null, providing better handling of optional fields.
-
-**Generated Check Class Methods:**
-
+**Generated Methods:**
 ```java
-// BatchValidator for manual control
-UserProfileCheck.check(username, age, minFollowers, maxConnections, email, bio, displayName)
-
-// Validator for immediate validation with chaining  
-UserProfileCheck.require(username, age, minFollowers, maxConnections, email, bio, displayName)
-
-// Convenience method - validates and throws on failure
-UserProfileCheck.validate(username, age, minFollowers, maxConnections, email, bio, displayName)
-```
-
-**Example Generated Validation Chain:**
-
-```java
-return validator
-    .notNull(username, "username")
-    .notBlank(username, "username")
-    .hasLength(username, 3, 20, "username")
-    .inRange(age, 0, 100, "age")
-    .nullOrMin(minFollowers, 1, "minFollowers")
-    .nullOrMax(maxConnections, 5000, "maxConnections")
-    .nullOrMatches(email, "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}", "email")
-    .nullOrHasLength(bio, 10, 200, "bio")
-    .nullOrNotBlank(displayName, "displayName");
-```
-
-**Error Handling:**
-
-```java
-try {
-    UserProfileCheck.validate(username, age, minFollowers, maxConnections, email, bio, displayName);
-} catch (ValidationException e) {
-    int errorCount = e.getErrors().size();  // Get number of validation errors
-    List<String> errorMessages = e.getErrors();  // Get detailed error messages
-    System.out.println("Validation failed with " + errorCount + " errors:");
-    errorMessages.forEach(System.out::println);
-}
+UserProfileCheck.check(...)    // BatchValidator for manual control
+UserProfileCheck.require(...)  // Validator for chaining
+UserProfileCheck.validate(...) // Throws ValidationException on failure
 ```
 
 ## Requirements
