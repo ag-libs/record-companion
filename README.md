@@ -31,21 +31,6 @@ Bean Validation integration through compile-time code generation.
   <version>0.1.2</version>
   <scope>provided</scope>
 </dependency>
-
-<!-- ValidCheck library (required only for @ValidCheck integration) -->
-<dependency>
-  <groupId>io.github.validcheck</groupId>
-  <artifactId>validcheck</artifactId>
-  <version>0.1.2</version>
-</dependency>
-
-<!-- Bean Validation API (required only for @ValidCheck integration) -->
-<dependency>
-  <groupId>javax.validation</groupId>
-  <artifactId>validation-api</artifactId>
-  <version>0.1.2</version>
-  <scope>provided</scope>
-</dependency>
 ```
 
 **Gradle:**
@@ -54,12 +39,6 @@ Bean Validation integration through compile-time code generation.
 // Record Companion Processor  
 annotationProcessor 'io.github.record-companion:record-companion-processor:0.1.2'
 compileOnly 'io.github.record-companion:record-companion-processor:0.1.2'
-
-// ValidCheck library (required only for @ValidCheck integration)
-implementation 'io.github.validcheck:validcheck:1.0.0'
-
-// Bean Validation API (required only for @ValidCheck integration) 
-compileOnly 'javax.validation:validation-api:2.0.1.Final'
 ```
 
 ### 2. Annotate Your Records
