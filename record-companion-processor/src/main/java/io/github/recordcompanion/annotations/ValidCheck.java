@@ -17,8 +17,16 @@ import java.lang.annotation.Target;
  * <ul>
  *   <li>{@code @NotNull} - Maps to {@code .notNull(value, fieldName)}
  *   <li>{@code @NotEmpty} - Maps to {@code .notNullOrEmpty(value, fieldName)}
- *   <li>{@code @Size(min, max)} - Maps to {@code .hasLength(value, min, max, fieldName)}
- *   <li>{@code @Pattern(regexp)} - Maps to {@code .matches(value, pattern, fieldName)}
+ *   <li>{@code @NotBlank} - Maps to {@code .notBlank(value, fieldName)} or {@code
+ *       .nullOrNotBlank(value, fieldName)} for nullable fields
+ *   <li>{@code @Size(min, max)} - Maps to {@code .hasLength(value, min, max, fieldName)} or {@code
+ *       .nullOrHasLength(value, min, max, fieldName)} for nullable fields
+ *   <li>{@code @Pattern(regexp)} - Maps to {@code .matches(value, pattern, fieldName)} or {@code
+ *       .nullOrMatches(value, pattern, fieldName)} for nullable fields
+ *   <li>{@code @Min(value)} - Maps to {@code .min(value, minValue, fieldName)} or {@code
+ *       .nullOrMin(value, minValue, fieldName)} for nullable fields
+ *   <li>{@code @Max(value)} - Maps to {@code .max(value, maxValue, fieldName)} or {@code
+ *       .nullOrMax(value, maxValue, fieldName)} for nullable fields
  *   <li>{@code @Min + @Max} (combined) - Maps to {@code .inRange(value, min, max, fieldName)}
  *   <li>{@code @Positive} - Maps to {@code .inRange(value, 1, Integer.MAX_VALUE, fieldName)}
  *   <li>{@code @Negative} - Maps to {@code .inRange(value, Integer.MIN_VALUE, -1, fieldName)}
@@ -26,8 +34,9 @@ import java.lang.annotation.Target;
  *   <li>{@code @NegativeOrZero} - Maps to {@code .inRange(value, Integer.MIN_VALUE, 0, fieldName)}
  * </ul>
  *
- * <p><strong>Note:</strong> Individual {@code @Min} and {@code @Max} annotations (without the
- * other) and {@code @NotBlank} are currently not supported but may be added in future releases.
+ * <p><strong>Null-Safe Validation:</strong> Fields without {@code @NotNull} automatically use
+ * null-safe validation methods (e.g., {@code nullOrNotBlank}, {@code nullOrHasLength}) that skip
+ * validation when the field is null, providing better handling of optional fields.
  *
  * <p><strong>Example usage:</strong>
  *

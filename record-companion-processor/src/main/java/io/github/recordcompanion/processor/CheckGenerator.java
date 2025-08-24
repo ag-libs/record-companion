@@ -120,6 +120,9 @@ public class CheckGenerator {
     // Get the accessor method element, which is where annotations are typically placed
     Element accessor = component.getAccessor();
 
+    // Check if the field is nullable (no @NotNull annotation)
+    boolean isNullable = accessor.getAnnotation(NotNull.class) == null;
+
     // Check for @NotNull
     NotNull notNullAnnotation = accessor.getAnnotation(NotNull.class);
     if (notNullAnnotation != null) {
@@ -135,8 +138,11 @@ public class CheckGenerator {
     // Check for @NotBlank
     NotBlank notBlankAnnotation = accessor.getAnnotation(NotBlank.class);
     if (notBlankAnnotation != null) {
-      // TODO: Add notBlank() method to ValidCheck core
-      // Temporarily skip until ValidCheck core has notBlank() method
+      if (isNullable) {
+        rules.add(new ValidationRule("nullOrNotBlank", componentName, List.of()));
+      } else {
+        rules.add(new ValidationRule("notBlank", componentName, List.of()));
+      }
     }
 
     // Check for @Size
@@ -144,14 +150,22 @@ public class CheckGenerator {
     if (sizeAnnotation != null) {
       int min = sizeAnnotation.min();
       int max = sizeAnnotation.max();
-      rules.add(new ValidationRule("hasLength", componentName, List.of(min, max)));
+      if (isNullable) {
+        rules.add(new ValidationRule("nullOrHasLength", componentName, List.of(min, max)));
+      } else {
+        rules.add(new ValidationRule("hasLength", componentName, List.of(min, max)));
+      }
     }
 
     // Check for @Pattern
     Pattern patternAnnotation = accessor.getAnnotation(Pattern.class);
     if (patternAnnotation != null) {
       String regex = patternAnnotation.regexp();
-      rules.add(new ValidationRule("matches", componentName, List.of(regex)));
+      if (isNullable) {
+        rules.add(new ValidationRule("nullOrMatches", componentName, List.of(regex)));
+      } else {
+        rules.add(new ValidationRule("matches", componentName, List.of(regex)));
+      }
     }
 
     // Check for @Min and @Max - handle individually and combined
@@ -164,11 +178,21 @@ public class CheckGenerator {
       long max = maxAnnotation.value();
       rules.add(new ValidationRule("inRange", componentName, List.of((int) min, (int) max)));
     } else if (minAnnotation != null) {
-      // Only @Min present - TODO: Add min() method to ValidCheck core
-      // Temporarily skip until ValidCheck core has min() method
+      // Only @Min present - use min() method from ValidCheck API
+      long min = minAnnotation.value();
+      if (isNullable) {
+        rules.add(new ValidationRule("nullOrMin", componentName, List.of((int) min)));
+      } else {
+        rules.add(new ValidationRule("min", componentName, List.of((int) min)));
+      }
     } else if (maxAnnotation != null) {
-      // Only @Max present - TODO: Add max() method to ValidCheck core
-      // Temporarily skip until ValidCheck core has max() method
+      // Only @Max present - use max() method from ValidCheck API
+      long max = maxAnnotation.value();
+      if (isNullable) {
+        rules.add(new ValidationRule("nullOrMax", componentName, List.of((int) max)));
+      } else {
+        rules.add(new ValidationRule("max", componentName, List.of((int) max)));
+      }
     }
 
     // Check for @Positive (number > 0)
