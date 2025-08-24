@@ -16,6 +16,8 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.TypeElement;
+import javax.validation.constraints.DecimalMax;
+import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.Negative;
@@ -150,10 +152,29 @@ public class CheckGenerator {
     if (sizeAnnotation != null) {
       int min = sizeAnnotation.min();
       int max = sizeAnnotation.max();
-      if (isNullable) {
-        rules.add(new ValidationRule("nullOrHasLength", componentName, List.of(min, max)));
+
+      // Determine if this is a Collection type or String/CharSequence
+      String typeName = component.asType().toString();
+      boolean isCollection =
+          typeName.contains("Collection")
+              || typeName.contains("List")
+              || typeName.contains("Set")
+              || typeName.contains("Map");
+
+      if (isCollection) {
+        // Use hasSize for collections
+        if (isNullable) {
+          rules.add(new ValidationRule("nullOrHasSize", componentName, List.of(min, max)));
+        } else {
+          rules.add(new ValidationRule("hasSize", componentName, List.of(min, max)));
+        }
       } else {
-        rules.add(new ValidationRule("hasLength", componentName, List.of(min, max)));
+        // Use hasLength for strings/char sequences
+        if (isNullable) {
+          rules.add(new ValidationRule("nullOrHasLength", componentName, List.of(min, max)));
+        } else {
+          rules.add(new ValidationRule("hasLength", componentName, List.of(min, max)));
+        }
       }
     }
 
@@ -192,6 +213,33 @@ public class CheckGenerator {
         rules.add(new ValidationRule("nullOrMax", componentName, List.of((int) max)));
       } else {
         rules.add(new ValidationRule("max", componentName, List.of((int) max)));
+      }
+    }
+
+    // Check for @DecimalMin and @DecimalMax - handle individually and combined
+    DecimalMin decimalMinAnnotation = accessor.getAnnotation(DecimalMin.class);
+    DecimalMax decimalMaxAnnotation = accessor.getAnnotation(DecimalMax.class);
+
+    if (decimalMinAnnotation != null && decimalMaxAnnotation != null) {
+      // Both present - use range validation
+      double min = Double.parseDouble(decimalMinAnnotation.value());
+      double max = Double.parseDouble(decimalMaxAnnotation.value());
+      rules.add(new ValidationRule("inRange", componentName, List.of(min, max)));
+    } else if (decimalMinAnnotation != null) {
+      // Only @DecimalMin present - use min() method from ValidCheck API
+      double min = Double.parseDouble(decimalMinAnnotation.value());
+      if (isNullable) {
+        rules.add(new ValidationRule("nullOrMin", componentName, List.of(min)));
+      } else {
+        rules.add(new ValidationRule("min", componentName, List.of(min)));
+      }
+    } else if (decimalMaxAnnotation != null) {
+      // Only @DecimalMax present - use max() method from ValidCheck API
+      double max = Double.parseDouble(decimalMaxAnnotation.value());
+      if (isNullable) {
+        rules.add(new ValidationRule("nullOrMax", componentName, List.of(max)));
+      } else {
+        rules.add(new ValidationRule("max", componentName, List.of(max)));
       }
     }
 

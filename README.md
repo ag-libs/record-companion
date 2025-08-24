@@ -175,7 +175,11 @@ public record UserProfile(
 - `@Pattern(regexp)` → `.matches(value, pattern, fieldName)` or `.nullOrMatches(value, pattern, fieldName)` for nullable fields
 - `@Min(value)` → `.min(value, minValue, fieldName)` or `.nullOrMin(value, minValue, fieldName)` for nullable fields
 - `@Max(value)` → `.max(value, maxValue, fieldName)` or `.nullOrMax(value, maxValue, fieldName)` for nullable fields
+- `@DecimalMin(value)` → `.min(value, minValue, fieldName)` or `.nullOrMin(value, minValue, fieldName)` for nullable fields
+- `@DecimalMax(value)` → `.max(value, maxValue, fieldName)` or `.nullOrMax(value, maxValue, fieldName)` for nullable fields
 - `@Min + @Max` (combined) → `.inRange(value, min, max, fieldName)`
+- `@DecimalMin + @DecimalMax` (combined) → `.inRange(value, min, max, fieldName)`
+- `@Size(min, max)` on Collections → `.hasSize(collection, min, max, fieldName)` or `.nullOrHasSize(collection, min, max, fieldName)` for nullable collections
 - `@Positive` → `.inRange(value, 1, Integer.MAX_VALUE, fieldName)`
 - `@Negative` → `.inRange(value, Integer.MIN_VALUE, -1, fieldName)`
 - `@PositiveOrZero` → `.inRange(value, 0, Integer.MAX_VALUE, fieldName)`
