@@ -156,18 +156,20 @@ public class CheckGenerator {
       // Determine if this is a Collection type or String/CharSequence
       String typeName = component.asType().toString();
       boolean isCollection =
-          typeName.contains("Collection")
-              || typeName.contains("List")
-              || typeName.contains("Set")
-              || typeName.contains("Map");
+          typeName.contains("Collection") || typeName.contains("List") || typeName.contains("Set");
+      boolean isMap = typeName.contains("Map");
 
       if (isCollection) {
-        // Use hasSize for collections
+        // Use hasSize for collections (List, Set, Collection)
         if (isNullable) {
           rules.add(new ValidationRule("nullOrHasSize", componentName, List.of(min, max)));
         } else {
           rules.add(new ValidationRule("hasSize", componentName, List.of(min, max)));
         }
+      } else if (isMap) {
+        // For Maps, we need to validate the size differently - skip for now
+        // TODO: Add Map size validation support when ValidCheck supports it
+        // For now, fall back to not adding validation for Maps
       } else {
         // Use hasLength for strings/char sequences
         if (isNullable) {
