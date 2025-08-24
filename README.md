@@ -28,7 +28,7 @@ Bean Validation integration through compile-time code generation.
 <dependency>
   <groupId>io.github.record-companion</groupId>
   <artifactId>record-companion-processor</artifactId>
-  <version>0.1.1</version>
+  <version>0.1.2</version>
   <scope>provided</scope>
 </dependency>
 
@@ -36,14 +36,14 @@ Bean Validation integration through compile-time code generation.
 <dependency>
   <groupId>io.github.validcheck</groupId>
   <artifactId>validcheck</artifactId>
-  <version>1.0.0</version>
+  <version>0.1.2</version>
 </dependency>
 
 <!-- Bean Validation API (required only for @ValidCheck integration) -->
 <dependency>
   <groupId>javax.validation</groupId>
   <artifactId>validation-api</artifactId>
-  <version>0.1.1</version>
+  <version>0.1.2</version>
   <scope>provided</scope>
 </dependency>
 ```
@@ -52,8 +52,8 @@ Bean Validation integration through compile-time code generation.
 
 ```gradle
 // Record Companion Processor  
-annotationProcessor 'io.github.record-companion:record-companion-processor:0.1.1'
-compileOnly 'io.github.record-companion:record-companion-processor:0.1.1'
+annotationProcessor 'io.github.record-companion:record-companion-processor:0.1.2'
+compileOnly 'io.github.record-companion:record-companion-processor:0.1.2'
 
 // ValidCheck library (required only for @ValidCheck integration)
 implementation 'io.github.validcheck:validcheck:1.0.0'
