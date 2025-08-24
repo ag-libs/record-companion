@@ -170,6 +170,7 @@ public record UserProfile(
 Fields without `@NotNull` automatically use null-safe validation methods.
 
 **Generated Methods:**
+
 ```java
 UserProfileCheck.check(...)    // BatchValidator for manual control
 UserProfileCheck.require(...)  // Validator for chaining
