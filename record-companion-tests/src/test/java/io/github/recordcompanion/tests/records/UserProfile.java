@@ -18,6 +18,6 @@ public record UserProfile(
     @NotEmpty Map<String, String> metadata,
     @Pattern(regexp = ".*") String address) {
   public UserProfile {
-    // UserProfileCheck.validate(username, score, metadata);
+    UserProfileCheck.require(username, score, metadata, address);
   }
 }
