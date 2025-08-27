@@ -1,6 +1,6 @@
 package io.github.recordcompanion.tests.records;
 
-import io.github.recordcompanion.annotations.Builder;
+import io.github.recordcompanion.builder.Builder;
 import java.util.List;
 
 @Builder

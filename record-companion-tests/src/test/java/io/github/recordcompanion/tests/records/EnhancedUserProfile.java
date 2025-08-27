@@ -1,7 +1,7 @@
 package io.github.recordcompanion.tests.records;
 
-import io.github.recordcompanion.annotations.Builder;
-import io.github.recordcompanion.annotations.ValidCheck;
+import io.github.recordcompanion.builder.Builder;
+import io.github.recordcompanion.validcheck.ValidCheck;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;

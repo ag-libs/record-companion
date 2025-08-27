@@ -27,7 +27,8 @@
   </developers>
 
   <modules>
-    <module>record-companion-processor</module>
+    <module>record-companion-builder</module>
+    <module>record-companion-validcheck</module>
     <module>record-companion-tests</module>
   </modules>
 
@@ -58,7 +59,13 @@
     <dependencies>
       <dependency>
         <groupId>io.github.record-companion</groupId>
-        <artifactId>record-companion-processor</artifactId>
+        <artifactId>record-companion-builder</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      
+      <dependency>
+        <groupId>io.github.record-companion</groupId>
+        <artifactId>record-companion-validcheck</artifactId>
         <version>${project.version}</version>
       </dependency>
 

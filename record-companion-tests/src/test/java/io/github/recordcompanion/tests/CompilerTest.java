@@ -3,7 +3,8 @@ package io.github.recordcompanion.tests;
 import static com.google.testing.compile.Compiler.javac;
 
 import com.google.testing.compile.JavaFileObjects;
-import io.github.recordcompanion.processor.RecordCompanionProcessor;
+import io.github.recordcompanion.builder.internal.BuilderProcessor;
+import io.github.recordcompanion.validcheck.internal.ValidCheckProcessor;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
@@ -28,6 +29,8 @@ public class CompilerTest {
                   }
                 })
             .filter(j -> j.getKind() == Kind.SOURCE);
-    javac().withProcessors(new RecordCompanionProcessor()).compile(sources.toList());
+    javac()
+        .withProcessors(new BuilderProcessor(), new ValidCheckProcessor())
+        .compile(sources.toList());
   }
 }

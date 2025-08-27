@@ -9,6 +9,7 @@ Bean Validation integration through compile-time code generation.
 
 ## What Record Companion Provides
 
+- **Modular architecture** - Use only the modules you need (builder, validation, or both)
 - Generate fluent builder classes for Java records with a single annotation
 - Optional annotation copying from records to generated builders
 - **Enhanced Bean Validation integration** - Automatic mapping from Bean Validation annotations to ValidCheck API
@@ -21,13 +22,25 @@ Bean Validation integration through compile-time code generation.
 
 ### 1. Add Dependency
 
+Choose the modules you need:
+- **record-companion-builder**: For `@Builder` annotation (builder pattern generation)  
+- **record-companion-validcheck**: For `@ValidCheck` annotation (validation integration)
+
 **Maven:**
 
 ```xml
-<!-- Record Companion Processor -->
+<!-- Record Companion Builder -->
 <dependency>
   <groupId>io.github.record-companion</groupId>
-  <artifactId>record-companion-processor</artifactId>
+  <artifactId>record-companion-builder</artifactId>
+  <version>0.1.2</version>
+  <scope>provided</scope>
+</dependency>
+
+<!-- Record Companion ValidCheck (optional) -->
+<dependency>
+  <groupId>io.github.record-companion</groupId>
+  <artifactId>record-companion-validcheck</artifactId>
   <version>0.1.2</version>
   <scope>provided</scope>
 </dependency>
@@ -36,15 +49,19 @@ Bean Validation integration through compile-time code generation.
 **Gradle:**
 
 ```gradle
-// Record Companion Processor  
-annotationProcessor 'io.github.record-companion:record-companion-processor:0.1.2'
-compileOnly 'io.github.record-companion:record-companion-processor:0.1.2'
+// Record Companion Builder
+annotationProcessor 'io.github.record-companion:record-companion-builder:0.1.2'
+compileOnly 'io.github.record-companion:record-companion-builder:0.1.2'
+
+// Record Companion ValidCheck (optional)
+annotationProcessor 'io.github.record-companion:record-companion-validcheck:0.1.2'
+compileOnly 'io.github.record-companion:record-companion-validcheck:0.1.2'
 ```
 
 ### 2. Annotate Your Records
 
 ```java
-import io.github.recordcompanion.annotations.Builder;
+import io.github.recordcompanion.builder.Builder;
 
 @Builder
 public record User(String name, int age, String email) {}
@@ -126,6 +143,10 @@ UserBuilder.with(existingUser, updater -> updater.age(31))
 Add `@ValidCheck` to generate validation code using [ValidCheck library](https://github.com/validcheck/validcheck):
 
 ```java
+import io.github.recordcompanion.builder.Builder;
+import io.github.recordcompanion.validcheck.ValidCheck;
+import javax.validation.constraints.*;
+
 @Builder
 @ValidCheck
 public record UserProfile(

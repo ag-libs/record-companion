@@ -1,4 +1,4 @@
-package io.github.recordcompanion.annotations;
+package io.github.recordcompanion.builder;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
