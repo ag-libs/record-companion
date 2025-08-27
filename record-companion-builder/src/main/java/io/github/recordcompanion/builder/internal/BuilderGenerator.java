@@ -1,4 +1,4 @@
-package io.github.recordcompanion.processor;
+package io.github.recordcompanion.builder.internal;
 
 import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
@@ -9,7 +9,7 @@ import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 import com.squareup.javapoet.TypeVariableName;
-import io.github.recordcompanion.annotations.Builder;
+import io.github.recordcompanion.builder.Builder;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;

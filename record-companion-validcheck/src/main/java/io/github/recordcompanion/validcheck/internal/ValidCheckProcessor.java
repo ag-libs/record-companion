@@ -1,7 +1,6 @@
-package io.github.recordcompanion.processor;
+package io.github.recordcompanion.validcheck.internal;
 
-import io.github.recordcompanion.annotations.Builder;
-import io.github.recordcompanion.annotations.ValidCheck;
+import io.github.recordcompanion.validcheck.ValidCheck;
 import java.io.IOException;
 import java.util.Set;
 import javax.annotation.processing.AbstractProcessor;
@@ -14,19 +13,19 @@ import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
 
 /**
- * Annotation processor for RecordCompanion library.
+ * Annotation processor for ValidCheck validation generation.
  *
- * <p>Processes @Builder annotations on record classes and generates separate Builder classes and
- * Updater interfaces with builder pattern implementations.
+ * <p>Processes @ValidCheck annotations on record classes and generates Check classes with
+ * ValidCheck integration for Bean Validation annotations.
  */
-@SupportedAnnotationTypes({
-  "io.github.recordcompanion.annotations.Builder",
-  "io.github.recordcompanion.annotations.ValidCheck"
-})
-public class RecordCompanionProcessor extends AbstractProcessor {
+@SupportedAnnotationTypes("io.github.recordcompanion.validcheck.ValidCheck")
+public class ValidCheckProcessor extends AbstractProcessor {
 
-  private BuilderGenerator builderGenerator;
   private CheckGenerator checkGenerator;
+
+  public ValidCheckProcessor() {
+    // Default constructor
+  }
 
   @Override
   public SourceVersion getSupportedSourceVersion() {
@@ -35,21 +34,17 @@ public class RecordCompanionProcessor extends AbstractProcessor {
 
   @Override
   public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-    if (builderGenerator == null) {
-      builderGenerator = new BuilderGenerator(processingEnv);
-    }
-
     if (checkGenerator == null) {
       checkGenerator = new CheckGenerator(processingEnv);
     }
 
-    for (Element element : roundEnv.getElementsAnnotatedWith(Builder.class)) {
+    for (Element element : roundEnv.getElementsAnnotatedWith(ValidCheck.class)) {
       if (element.getKind() != ElementKind.RECORD) {
         processingEnv
             .getMessager()
             .printMessage(
                 Diagnostic.Kind.ERROR,
-                "@Builder annotation can only be applied to record classes",
+                "@ValidCheck annotation can only be applied to record classes",
                 element);
         continue;
       }
@@ -57,17 +52,13 @@ public class RecordCompanionProcessor extends AbstractProcessor {
       TypeElement recordElement = (TypeElement) element;
 
       try {
-        builderGenerator.generateBuilderAndUpdaterTypes(recordElement);
-
-        if (recordElement.getAnnotation(ValidCheck.class) != null) {
-          checkGenerator.generateCheck(recordElement);
-        }
+        checkGenerator.generateCheck(recordElement);
       } catch (IOException e) {
         processingEnv
             .getMessager()
             .printMessage(
                 Diagnostic.Kind.ERROR,
-                "Failed to generate builder and updater types for "
+                "Failed to generate check class for "
                     + recordElement.getSimpleName()
                     + ": "
                     + e.getMessage(),

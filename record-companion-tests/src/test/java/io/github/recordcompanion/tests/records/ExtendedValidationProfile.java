@@ -1,7 +1,7 @@
 package io.github.recordcompanion.tests.records;
 
-import io.github.recordcompanion.annotations.Builder;
-import io.github.recordcompanion.annotations.ValidCheck;
+import io.github.recordcompanion.builder.Builder;
+import io.github.recordcompanion.validcheck.ValidCheck;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;

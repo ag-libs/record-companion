@@ -1,4 +1,4 @@
-package io.github.recordcompanion.processor;
+package io.github.recordcompanion.validcheck.internal;
 
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;

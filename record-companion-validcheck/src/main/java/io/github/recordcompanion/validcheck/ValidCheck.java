@@ -1,4 +1,4 @@
-package io.github.recordcompanion.annotations;
+package io.github.recordcompanion.validcheck;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
