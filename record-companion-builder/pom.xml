@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>io.github.record-companion</groupId>
+    <groupId>io.github.ag-libs.record-companion</groupId>
     <artifactId>record-companion</artifactId>
     <version>0.1.4-SNAPSHOT</version>
   </parent>

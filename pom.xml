@@ -2,14 +2,14 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>io.github.record-companion</groupId>
+  <groupId>io.github.ag-libs.record-companion</groupId>
   <artifactId>record-companion</artifactId>
   <version>0.1.4-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>record-companion-parent</name>
   <description>Java Record Enhancement Library - Builder Pattern Support</description>
-  <url>https://github.com/record-companion/record-companion</url>
+  <url>https://github.com/ag-libs/record-companion</url>
 
   <licenses>
     <license>
@@ -33,10 +33,10 @@
   </modules>
 
   <scm>
-    <connection>scm:git:https://github.com/record-companion/record-companion.git</connection>
-    <developerConnection>scm:git:https://github.com/record-companion/record-companion.git</developerConnection>
+    <connection>scm:git:https://github.com/ag-libs/record-companion.git</connection>
+    <developerConnection>scm:git:https://github.com/ag-libs/record-companion.git</developerConnection>
     <tag>HEAD</tag>
-    <url>https://github.com/record-companion/record-companion/tree/main</url>
+    <url>https://github.com/ag-libs/record-companion/tree/main</url>
   </scm>
 
   <distributionManagement>
@@ -58,13 +58,13 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>io.github.record-companion</groupId>
+        <groupId>io.github.ag-libs.record-companion</groupId>
         <artifactId>record-companion-builder</artifactId>
         <version>${project.version}</version>
       </dependency>
       
       <dependency>
-        <groupId>io.github.record-companion</groupId>
+        <groupId>io.github.ag-libs.record-companion</groupId>
         <artifactId>record-companion-validcheck</artifactId>
         <version>${project.version}</version>
       </dependency>
