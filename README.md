@@ -33,7 +33,7 @@ Choose the modules you need:
 <dependency>
   <groupId>io.github.record-companion</groupId>
   <artifactId>record-companion-builder</artifactId>
-  <version>0.1.3</version>
+  <version>0.1.4</version>
   <scope>provided</scope>
 </dependency>
 
@@ -41,7 +41,7 @@ Choose the modules you need:
 <dependency>
   <groupId>io.github.record-companion</groupId>
   <artifactId>record-companion-validcheck</artifactId>
-  <version>0.1.3</version>
+  <version>0.1.4</version>
   <scope>provided</scope>
 </dependency>
 ```
