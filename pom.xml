@@ -4,7 +4,7 @@
 
   <groupId>io.github.ag-libs.record-companion</groupId>
   <artifactId>record-companion</artifactId>
-  <version>0.1.5-SNAPSHOT</version>
+  <version>0.1.5</version>
   <packaging>pom</packaging>
 
   <name>record-companion-parent</name>
@@ -35,7 +35,7 @@
   <scm>
     <connection>scm:git:https://github.com/ag-libs/record-companion.git</connection>
     <developerConnection>scm:git:https://github.com/ag-libs/record-companion.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>v0.1.5</tag>
     <url>https://github.com/ag-libs/record-companion/tree/main</url>
   </scm>
 
