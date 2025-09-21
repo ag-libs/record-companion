@@ -44,8 +44,8 @@ jobs:
         run: |
           mvn sonar:sonar \
             --batch-mode \
-            -Dsonar.projectKey=record-companion_record-companion \
-            -Dsonar.organization=record-companion \
+            -Dsonar.projectKey=ag-libs_record-companion \
+            -Dsonar.organization=ag-libs \
             -Dsonar.coverage.jacoco.xmlReportPaths=../record-companion-tests/target/site/jacoco-aggregate/jacoco.xml,record-companion-tests/target/site/jacoco-aggregate/jacoco.xml
         if: ${{ matrix.java == '21' && matrix.os == 'ubuntu-latest' }}
         env:

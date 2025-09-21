@@ -5,10 +5,10 @@ module recordcompanion.validcheck {
   requires com.squareup.javapoet;
 
   // Export only the public annotation API
-  exports io.github.recordcompanion.validcheck;
+  exports io.github.aglibs.recordcompanion.validcheck;
 
   // Internal implementation is not exported - only accessible via service provider
 
   provides javax.annotation.processing.Processor with
-      io.github.recordcompanion.validcheck.internal.ValidCheckProcessor;
+      io.github.aglibs.recordcompanion.validcheck.internal.ValidCheckProcessor;
 }

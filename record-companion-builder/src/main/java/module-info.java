@@ -6,10 +6,10 @@ module recordcompanion.builder {
   requires com.squareup.javapoet;
 
   // Export only the public annotation API
-  exports io.github.recordcompanion.builder;
+  exports io.github.aglibs.recordcompanion.builder;
 
   // Internal implementation is not exported - only accessible via service provider
 
   provides javax.annotation.processing.Processor with
-      io.github.recordcompanion.builder.internal.BuilderProcessor;
+      io.github.aglibs.recordcompanion.builder.internal.BuilderProcessor;
 }
