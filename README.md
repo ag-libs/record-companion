@@ -1,8 +1,8 @@
 # Record Companion
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=record-companion_record-companion&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=record-companion_record-companion)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=record-companion_record-companion&metric=coverage)](https://sonarcloud.io/summary/new_code?id=record-companion_record-companion)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=ag-libs_record-companion&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=ag-libs-companion)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=ag-libs_record-companion&metric=coverage)](https://sonarcloud.io/summary/new_code?id=ag-libs-companion)
 
 A simple Java library that enhances Java records with builder pattern support and
 Bean Validation integration through compile-time code generation.
