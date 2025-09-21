@@ -33,7 +33,7 @@ Choose the modules you need:
 <dependency>
   <groupId>io.github.ag-libs.record-companion</groupId>
   <artifactId>record-companion-builder</artifactId>
-  <version>0.1.4</version>
+  <version>0.1.5</version>
   <scope>provided</scope>
 </dependency>
 
@@ -41,7 +41,7 @@ Choose the modules you need:
 <dependency>
   <groupId>io.github.ag-libs.record-companion</groupId>
   <artifactId>record-companion-validcheck</artifactId>
-  <version>0.1.4</version>
+  <version>0.1.5</version>
   <scope>provided</scope>
 </dependency>
 ```
@@ -50,12 +50,12 @@ Choose the modules you need:
 
 ```gradle
 // Record Companion Builder
-annotationProcessor 'io.github.record-companion:record-companion-builder:0.1.2'
-compileOnly 'io.github.ag-libs.record-companion:record-companion-builder:0.1.2'
+annotationProcessor 'io.github.record-companion:record-companion-builder:0.1.5'
+compileOnly 'io.github.ag-libs.record-companion:record-companion-builder:0.1.5'
 
 // Record Companion ValidCheck (optional)
-annotationProcessor 'io.github.record-companion:record-companion-validcheck:0.1.2'
-compileOnly 'io.github.ag-libs.record-companion:record-companion-validcheck:0.1.2'
+annotationProcessor 'io.github.record-companion:record-companion-validcheck:0.1.5'
+compileOnly 'io.github.ag-libs.record-companion:record-companion-validcheck:0.1.5'
 ```
 
 ### 2. Annotate Your Records
