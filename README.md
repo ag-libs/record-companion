@@ -18,7 +18,7 @@ Add the dependency to your project:
 <dependency>
   <groupId>io.github.ag-libs.record-companion</groupId>
   <artifactId>record-companion-builder</artifactId>
-  <version>0.1.5</version>
+  <version>0.1.6</version>
   <scope>provided</scope>
 </dependency>
 ```
@@ -26,8 +26,8 @@ Add the dependency to your project:
 **Gradle:**
 
 ```gradle
-annotationProcessor 'io.github.ag-libs.record-companion:record-companion-builder:0.1.5'
-compileOnly 'io.github.ag-libs.record-companion:record-companion-builder:0.1.5'
+annotationProcessor 'io.github.ag-libs.record-companion:record-companion-builder:0.1.6'
+compileOnly 'io.github.ag-libs.record-companion:record-companion-builder:0.1.6'
 ```
 
 Annotate your record with `@Builder`:
@@ -111,7 +111,7 @@ If you need validation, there's an optional `@ValidCheck` annotation that integr
 <dependency>
   <groupId>io.github.ag-libs.record-companion</groupId>
   <artifactId>record-companion-validcheck</artifactId>
-  <version>0.1.5</version>
+  <version>0.1.6</version>
   <scope>provided</scope>
 </dependency>
 ```
