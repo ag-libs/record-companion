@@ -23,6 +23,24 @@ Add the dependency to your project:
 </dependency>
 ```
 
+> **Note:** While Maven automatically discovers annotation processors on the classpath, you can explicitly configure the processor path for better isolation:
+>
+> ```xml
+> <plugin>
+>   <groupId>org.apache.maven.plugins</groupId>
+>   <artifactId>maven-compiler-plugin</artifactId>
+>   <configuration>
+>     <annotationProcessorPaths>
+>       <path>
+>         <groupId>io.github.ag-libs.record-companion</groupId>
+>         <artifactId>record-companion-builder</artifactId>
+>         <version>0.1.6</version>
+>       </path>
+>     </annotationProcessorPaths>
+>   </configuration>
+> </plugin>
+> ```
+
 **Gradle:**
 
 ```gradle

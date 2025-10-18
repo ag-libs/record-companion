@@ -92,7 +92,9 @@ jobs:
           VERSION=${LATEST_TAG#v}
 
           # Update README.md version references
-          sed -i "s/<version>.*<\/version>/<version>$VERSION<\/version>/g" README.md
+          # Match all <version> tags within record-companion artifacts
+          sed -i "s/\(record-companion-[a-z]*<\/artifactId>\s*\n\s*<version>\)[0-9]\+\.[0-9]\+\.[0-9]\+\(<\/version>\)/\1$VERSION\2/g" README.md
+          # Match Gradle-style version references
           sed -i "s/record-companion-builder:[0-9]\+\.[0-9]\+\.[0-9]\+/record-companion-builder:$VERSION/g" README.md
           sed -i "s/record-companion-validcheck:[0-9]\+\.[0-9]\+\.[0-9]\+/record-companion-validcheck:$VERSION/g" README.md
 
