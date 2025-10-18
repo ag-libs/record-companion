@@ -1,5 +1,5 @@
 /** RecordCompanion ValidCheck module for generating ValidCheck validation for Java records. */
-module recordcompanion.validcheck {
+module io.github.aglibs.recordcompanion.validcheck {
   requires transitive java.compiler;
   requires java.validation;
   requires com.squareup.javapoet;

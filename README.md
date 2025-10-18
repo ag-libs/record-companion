@@ -4,43 +4,20 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=ag-libs_record-companion&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=ag-libs-companion)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=ag-libs_record-companion&metric=coverage)](https://sonarcloud.io/summary/new_code?id=ag-libs-companion)
 
-A simple Java library that enhances Java records with builder pattern support and
-Bean Validation integration through compile-time code generation.
+A simple library that generates builder pattern implementations for Java records at compile time. Just add one annotation to your record, and get a fluent builder automatically.
 
-## What Record Companion Provides
+No runtime dependencies. No reflection. No magic. Just clean, generated code that works with any IDE.
 
-- **Modular architecture** - Use only the modules you need (builder, validation, or both)
-- Generate fluent builder classes for Java records with a single annotation
-- Optional annotation copying from records to generated builders
-- **Enhanced Bean Validation integration** - Automatic mapping from Bean Validation annotations to ValidCheck API
-- Built-in support for `@NotNull`, `@NotEmpty`, `@NotBlank`, `@Size`, `@Pattern`, individual `@Min`/`@Max`, `@Min/@Max` combinations, `@Positive`, `@Negative`, `@PositiveOrZero`, and `@NegativeOrZero`
-- **Null-safe validation** - Automatically uses `nullOr*` methods for optional fields without `@NotNull`
-- Works with any IDE without special plugins
-- No runtime dependencies required for builders (ValidCheck integration requires ValidCheck library)
+## Getting Started
 
-## Quick Start
-
-### 1. Add Dependency
-
-Choose the modules you need:
-- **record-companion-builder**: For `@Builder` annotation (builder pattern generation)  
-- **record-companion-validcheck**: For `@ValidCheck` annotation (validation integration)
+Add the dependency to your project:
 
 **Maven:**
 
 ```xml
-<!-- Record Companion Builder -->
 <dependency>
   <groupId>io.github.ag-libs.record-companion</groupId>
   <artifactId>record-companion-builder</artifactId>
-  <version>0.1.5</version>
-  <scope>provided</scope>
-</dependency>
-
-<!-- Record Companion ValidCheck (optional) -->
-<dependency>
-  <groupId>io.github.ag-libs.record-companion</groupId>
-  <artifactId>record-companion-validcheck</artifactId>
   <version>0.1.5</version>
   <scope>provided</scope>
 </dependency>
@@ -49,109 +26,104 @@ Choose the modules you need:
 **Gradle:**
 
 ```gradle
-// Record Companion Builder
-annotationProcessor 'io.github.record-companion:record-companion-builder:0.1.5'
+annotationProcessor 'io.github.ag-libs.record-companion:record-companion-builder:0.1.5'
 compileOnly 'io.github.ag-libs.record-companion:record-companion-builder:0.1.5'
-
-// Record Companion ValidCheck (optional)
-annotationProcessor 'io.github.record-companion:record-companion-validcheck:0.1.5'
-compileOnly 'io.github.ag-libs.record-companion:record-companion-validcheck:0.1.5'
 ```
 
-### 2. Annotate Your Records
+Annotate your record with `@Builder`:
 
 ```java
-import io.github.recordcompanion.builder.Builder;
+import io.github.aglibs.recordcompanion.builder.Builder;
 
 @Builder
 public record User(String name, int age, String email) {}
-
 ```
 
-### 3. Use the Generated Builder
+That's it! The library generates a builder class at compile time.
+
+## Usage
+
+The generated builder gives you three ways to work with your records:
 
 ```java
-// Create new instances
+// Create new instances with a fluent API
 User user = UserBuilder.builder()
-        .name("John Doe")
-        .age(30)
-        .email("john@example.com")
-        .build();
+    .name("John Doe")
+    .age(30)
+    .email("john@example.com")
+    .build();
 
-// Create from existing record
-User updatedUser = UserBuilder.builder(user)
+// Copy and modify existing records
+User updated = UserBuilder.builder(user)
     .age(31)
     .build();
 
 // Functional updates
-User modifiedUser = UserBuilder.with(user, updater ->
-    updater.name("Jane Doe").email("jane@example.com")
+User modified = UserBuilder.with(user, builder ->
+    builder.name("Jane Doe").email("jane@example.com")
 );
 ```
 
-## Core Features
+## What Gets Generated
 
-### Builder Pattern Support
+For each `@Builder` annotated record, you get two types:
 
-Record Companion generates two main components for each annotated record:
-
-**Builder Class:** A concrete implementation with fluent methods
+**A concrete Builder class** with all the fluent methods:
 
 ```java
 public final class UserBuilder implements UserUpdater {
-
-  public UserBuilder name(String name) { ...}
-
-  public UserBuilder age(int age) { ...}
-
-  public UserBuilder email(String email) { ...}
-
-  public User build() { ...}
+  public UserBuilder name(String name) { ... }
+  public UserBuilder age(int age) { ... }
+  public UserBuilder email(String email) { ... }
+  public User build() { ... }
+  
+  // Static factory methods
+  public static UserBuilder builder() { ... }
+  public static UserBuilder builder(User existing) { ... }
+  public static User with(User existing, Consumer<UserUpdater> updater) { ... }
 }
 ```
 
-**Updater Interface:** For flexible composition and functional updates
+**An Updater interface** for flexible composition:
 
 ```java
 public interface UserUpdater {
-
   UserUpdater name(String name);
-
   UserUpdater age(int age);
-
   UserUpdater email(String email);
 }
 ```
 
-### Static Factory Methods
+The interface is useful when you want to pass update logic around without depending on the concrete builder class.
 
-Every generated builder provides convenient static methods:
+## Requirements
 
-```java
-// Create a new builder
-UserBuilder.builder()
+- Java 17 or later
+- Maven 3.6+ or Gradle 6.0+
 
-// Create builder pre-populated with existing record
-UserBuilder.builder(existingUser)
+## Validation Support
 
-// Functional update pattern
-UserBuilder.with(existingUser, updater -> updater.age(31))
+If you need validation, there's an optional `@ValidCheck` annotation that integrates with the [ValidCheck library](https://github.com/validcheck/validcheck). It automatically maps standard Bean Validation annotations to ValidCheck API calls.
+
+**Add the dependency:**
+
+```xml
+<dependency>
+  <groupId>io.github.ag-libs.record-companion</groupId>
+  <artifactId>record-companion-validcheck</artifactId>
+  <version>0.1.5</version>
+  <scope>provided</scope>
+</dependency>
 ```
 
-### Bean Validation Integration
-
-Add `@ValidCheck` to generate validation code using [ValidCheck library](https://github.com/validcheck/validcheck):
+**Usage example:**
 
 ```java
-import io.github.recordcompanion.builder.Builder;
-import io.github.recordcompanion.validcheck.ValidCheck;
-import javax.validation.constraints.*;
-
 @Builder
 @ValidCheck
 public record UserProfile(
-    @NotNull @NotBlank @Size(min = 3, max = 20) String username,
-    @Min(0) @Max(100) Integer age,
+    @NotNull @Size(min = 3, max = 20) String username,
+    @Min(18) @Max(120) Integer age,
     @Pattern(regexp = "\\w+@\\w+\\.\\w+") String email) {
 
   public UserProfile {
@@ -160,34 +132,13 @@ public record UserProfile(
 }
 ```
 
-**Supported Annotations:**
-- **Null checks:** `@NotNull`, `@NotEmpty`, `@NotBlank`
-- **Size/Length:** `@Size` (strings and collections)  
-- **Patterns:** `@Pattern`
-- **Numeric ranges:** `@Min`, `@Max`, `@DecimalMin`, `@DecimalMax`
-- **Sign constraints:** `@Positive`, `@Negative`, `@PositiveOrZero`, `@NegativeOrZero`
-
-Fields without `@NotNull` automatically use null-safe validation methods.
-
-**Generated Methods:**
-
-```java
-UserProfileCheck.check(...)    // BatchValidator for manual control
-UserProfileCheck.require(...)  // Validator for chaining
-UserProfileCheck.validate(...) // Throws ValidationException on failure
-```
-
-## Requirements
-
-- **Java 17+** (for record support)
-- **Maven 3.6+** or **Gradle 6.0+**
-- **Any IDE** (no special plugins required)
+This generates validation methods that check your constraints and throw exceptions if validation fails. Fields without `@NotNull` are automatically treated as optional.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Feel free to submit a pull request.
 
 ## License
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
