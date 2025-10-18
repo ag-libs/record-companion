@@ -1,7 +1,7 @@
 /**
  * RecordCompanion Builder module for generating builder pattern implementations for Java records.
  */
-module recordcompanion.builder {
+module io.github.aglibs.recordcompanion.builder {
   requires transitive java.compiler;
   requires com.squareup.javapoet;
 
